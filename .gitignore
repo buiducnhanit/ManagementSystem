@@ -23,7 +23,11 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+
 # .NET Core
+appsettings.json
 project.lock.json
 project.fragment.lock.json
 artifacts/
