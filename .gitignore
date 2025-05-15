@@ -27,7 +27,7 @@ bld/
 .vs/
 
 # .NET Core
-appsettings.json
+appsettings.Development.json
 project.lock.json
 project.fragment.lock.json
 artifacts/
