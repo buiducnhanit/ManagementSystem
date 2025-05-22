@@ -1,0 +1,137 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|c:\\users\\duc nhan\\source\\repos\\code\\managementuser\\managementsystem.shared\\managementsystem.shared\\common\\response\\apiresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|solutionrelative:managementsystem.shared\\common\\response\\apiresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|c:\\users\\duc nhan\\source\\repos\\code\\managementuser\\managementsystem.shared\\managementsystem.shared\\common\\middleware\\exceptionhandlingmiddleware.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|solutionrelative:managementsystem.shared\\common\\middleware\\exceptionhandlingmiddleware.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|c:\\users\\duc nhan\\source\\repos\\code\\managementuser\\managementsystem.shared\\managementsystem.shared\\common\\interfaces\\igenericinterface.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|solutionrelative:managementsystem.shared\\common\\interfaces\\igenericinterface.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|c:\\users\\duc nhan\\source\\repos\\code\\managementuser\\managementsystem.shared\\managementsystem.shared\\common\\entities\\baseentity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|solutionrelative:managementsystem.shared\\common\\entities\\baseentity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|c:\\users\\duc nhan\\source\\repos\\code\\managementuser\\managementsystem.shared\\managementsystem.shared\\common\\exceptions\\handleexception.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|solutionrelative:managementsystem.shared\\common\\exceptions\\handleexception.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|c:\\users\\duc nhan\\source\\repos\\code\\managementuser\\managementsystem.shared\\managementsystem.shared\\common\\logging\\icustomlogger.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|solutionrelative:managementsystem.shared\\common\\logging\\icustomlogger.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|c:\\users\\duc nhan\\source\\repos\\code\\managementuser\\managementsystem.shared\\managementsystem.shared\\common\\logging\\serilogcustomlogger.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4DBF9F43-54EC-4452-873F-FBFEC5F07FB2}|ManagementSystem.Shared\\ManagementSystem.Shared.csproj|solutionrelative:managementsystem.shared\\common\\logging\\serilogcustomlogger.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 7,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ExceptionHandlingMiddleware.cs",
+              "DocumentMoniker": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Middleware\\ExceptionHandlingMiddleware.cs",
+              "RelativeDocumentMoniker": "ManagementSystem.Shared\\Common\\Middleware\\ExceptionHandlingMiddleware.cs",
+              "ToolTip": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Middleware\\ExceptionHandlingMiddleware.cs",
+              "RelativeToolTip": "ManagementSystem.Shared\\Common\\Middleware\\ExceptionHandlingMiddleware.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-14T02:18:10.138Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "BaseEntity.cs",
+              "DocumentMoniker": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Entities\\BaseEntity.cs",
+              "RelativeDocumentMoniker": "ManagementSystem.Shared\\Common\\Entities\\BaseEntity.cs",
+              "ToolTip": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Entities\\BaseEntity.cs",
+              "RelativeToolTip": "ManagementSystem.Shared\\Common\\Entities\\BaseEntity.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-14T02:15:02.027Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "IGenericInterface.cs",
+              "DocumentMoniker": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Interfaces\\IGenericInterface.cs",
+              "RelativeDocumentMoniker": "ManagementSystem.Shared\\Common\\Interfaces\\IGenericInterface.cs",
+              "ToolTip": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Interfaces\\IGenericInterface.cs",
+              "RelativeToolTip": "ManagementSystem.Shared\\Common\\Interfaces\\IGenericInterface.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-14T02:13:30.908Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "HandleException.cs",
+              "DocumentMoniker": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Exceptions\\HandleException.cs",
+              "RelativeDocumentMoniker": "ManagementSystem.Shared\\Common\\Exceptions\\HandleException.cs",
+              "ToolTip": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Exceptions\\HandleException.cs",
+              "RelativeToolTip": "ManagementSystem.Shared\\Common\\Exceptions\\HandleException.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-14T02:39:09.581Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "SerilogCustomLogger.cs",
+              "DocumentMoniker": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Logging\\SerilogCustomLogger.cs",
+              "RelativeDocumentMoniker": "ManagementSystem.Shared\\Common\\Logging\\SerilogCustomLogger.cs",
+              "ToolTip": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Logging\\SerilogCustomLogger.cs",
+              "RelativeToolTip": "ManagementSystem.Shared\\Common\\Logging\\SerilogCustomLogger.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-14T02:05:22.632Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "ICustomLogger.cs",
+              "DocumentMoniker": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Logging\\ICustomLogger.cs",
+              "RelativeDocumentMoniker": "ManagementSystem.Shared\\Common\\Logging\\ICustomLogger.cs",
+              "ToolTip": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Logging\\ICustomLogger.cs",
+              "RelativeToolTip": "ManagementSystem.Shared\\Common\\Logging\\ICustomLogger.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-14T02:02:00.651Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ApiResponse.cs",
+              "DocumentMoniker": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Response\\ApiResponse.cs",
+              "RelativeDocumentMoniker": "ManagementSystem.Shared\\Common\\Response\\ApiResponse.cs",
+              "ToolTip": "C:\\Users\\Duc Nhan\\source\\repos\\code\\ManagementUser\\ManagementSystem.Shared\\ManagementSystem.Shared\\Common\\Response\\ApiResponse.cs",
+              "RelativeToolTip": "ManagementSystem.Shared\\Common\\Response\\ApiResponse.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAABFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-14T01:48:45.846Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
