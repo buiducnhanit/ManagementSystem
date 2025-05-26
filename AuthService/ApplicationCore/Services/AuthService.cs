@@ -5,6 +5,7 @@ using Infrastructure.JWT;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 
 namespace ApplicationCore.Services
 {
@@ -14,13 +15,18 @@ namespace ApplicationCore.Services
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IJwtTokenGenerator _jwtTokenGenerator;
         private readonly ICustomLogger<AuthService> _logger;
+        private readonly IConfiguration _configuration;
+        private readonly ISendMailService _sendMailService;
 
-        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthService> logger)
+        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthService> logger,
+            IConfiguration configuration, ISendMailService sendMailService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _jwtTokenGenerator = jwtTokenGenerator;
             _logger = logger;
+            _configuration = configuration;
+            _sendMailService = sendMailService;
         }
 
         public async Task<string?> RegisterAsync(RegisterDto dto)
@@ -48,15 +54,19 @@ namespace ApplicationCore.Services
                     throw new HandleException("User registration failed.", 400, errors);
                 }
 
-                var domainUser = new ApplicationUser
-                {
-                    Id = user.Id,
-                    UserName = user.UserName!,
-                    Email = user.Email!
-                };
+                var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-                var token = _jwtTokenGenerator.GenerateToken(domainUser);
-                return token;
+                var confirmationLink = $"{_configuration["Frontend:BaseUrl"]}/verify-email?userId={user.Id}&token={Uri.EscapeDataString(emailToken)}";
+
+                var subject = "Confirm your email";
+                var body = $"<p>Hello {user.UserName},</p>" +
+                           $"<p>Click <a href='{confirmationLink}'>here</a> to confirm your email address.</p>";
+
+                await _sendMailService.SendEmailAsync(user.Email!, subject, body, isHtml: true);
+
+                _logger.Info("User {Email} registered successfully and confirmation email sent.", user.Email);
+
+                return null;
             }
             catch (HandleException)
             {

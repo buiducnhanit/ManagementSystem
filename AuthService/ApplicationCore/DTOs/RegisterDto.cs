@@ -41,8 +41,7 @@ namespace ApplicationCore.DTOs
 
         [DataType(DataType.Date)]
         [Display(Name = "Date of Birth")]
-        [RegularExpression(@"^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/\d{4}$", ErrorMessage = "Date of Birth must be in the format dd/MM/yyyy.")]
-        public DateTime? dateOfBirth { get; set; } = null;
+        public DateTime? dateOfBirth { get; set; }
 
         [Required]
         [Display(Name = "Gender")]

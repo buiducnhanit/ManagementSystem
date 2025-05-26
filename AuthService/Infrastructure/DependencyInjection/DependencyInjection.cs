@@ -1,6 +1,8 @@
 ﻿using ApplicationCore.Entities;
 using ApplicationCore.Interfaces;
 using ApplicationCore.Services;
+using Infrastructure.ExtendedServices.Email;
+using Infrastructure.ExtendedServices.JWT;
 using Infrastructure.Identity;
 using Infrastructure.JWT;
 using ManagementSystem.Shared.Common.DependencyInjection;
@@ -42,11 +44,15 @@ namespace Infrastructure.DependencyInjection
                 options.User.RequireUniqueEmail = false;
 
                 // Required Confirm Email 
-                options.SignIn.RequireConfirmedEmail = false;
+                options.SignIn.RequireConfirmedEmail = true;
             });
 
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
             services.AddScoped<IAuthService, AuthService>();
+
+            // Configure email services
+            services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+            services.AddTransient<ISendMailService, SendMailService>();
 
             return services;
         }

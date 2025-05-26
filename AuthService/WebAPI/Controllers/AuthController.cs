@@ -25,14 +25,16 @@ namespace WebAPI.Controllers
         {
             try
             {
-                var token = await _authService.RegisterAsync(dto);
-                if (token == null)
+                if (!ModelState.IsValid)
                 {
-                    return BadRequest("Registration failed.");
+                    var errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList();
+                    _logger.Warn($"Invalid registration attempt for {dto.Email}. Errors: {string.Join(", ", errors)}");
+                    return BadRequest(ApiResponse<string>.FailureResponse("Invalid registration data.", 400, errors));
                 }
+                await _authService.RegisterAsync(dto);
 
-                _logger.Info($"User {dto.Email} registered successfully.");
-                return Ok(ApiResponse<string>.SuccessResponse(token, "Register successful"));
+                _logger.Info($"User {dto.Email} registered successfully. Confirmation email sent.");
+                return Ok(ApiResponse<string>.SuccessResponse(null, "Registration successful. Please check your email to confirm your account."));
             }
             catch (HandleException ex)
             {
