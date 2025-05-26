@@ -3,8 +3,8 @@ using ApplicationCore.Entities;
 using ApplicationCore.Interfaces;
 using Infrastructure.JWT;
 using ManagementSystem.Shared.Common.Exceptions;
+using ManagementSystem.Shared.Common.Logging;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
 
 namespace ApplicationCore.Services
 {
@@ -13,9 +13,9 @@ namespace ApplicationCore.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IJwtTokenGenerator _jwtTokenGenerator;
-        private readonly ILogger<AuthService> _logger;
+        private readonly ICustomLogger<AuthService> _logger;
 
-        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ILogger<AuthService> logger)
+        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthService> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -42,7 +42,10 @@ namespace ApplicationCore.Services
                 var result = await _userManager.CreateAsync(user, dto.Password);
                 if (!result.Succeeded)
                 {
-                    throw new HandleException("User registration failed.", 400);
+                    var errors = result.Errors.Select(e => e.Description).ToList();
+                    _logger.Warn("Failed to create user. Reasons: {@Reasons}", errors);
+
+                    throw new HandleException("User registration failed.", 400, errors);
                 }
 
                 var domainUser = new ApplicationUser
@@ -57,11 +60,11 @@ namespace ApplicationCore.Services
             }
             catch (HandleException)
             {
-                throw; // HandleException will be caught in the middleware and logged there
+                throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error in RegisterAsync for {Email}", dto.Email);
+                _logger.Error($"Unexpected error in RegisterAsync for {dto.Email}", ex);
                 throw new HandleException("An unexpected error occurred during registration.", 500);
             }
         }
@@ -72,19 +75,53 @@ namespace ApplicationCore.Services
             {
                 var user = await _userManager.FindByEmailAsync(dto.Email);
                 if (user == null)
-                    throw new HandleException("Invalid credentials", 400);
+                    throw new HandleException("Email does not exit.", 404);
 
                 var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, false);
                 if (!result.Succeeded)
-                    throw new HandleException("Invalid credentials", 400);
+                {
+                    if (result.IsNotAllowed)
+                    {
+                        var errors = new List<string>();
+
+                        if (!user.EmailConfirmed)
+                            errors.Add("Email is not confirmed.");
+
+                        if (!user.PhoneNumberConfirmed)
+                            errors.Add("Phone number is not confirmed.");
+
+                        _logger.Warn("Login not allowed for user {Email}. Reasons: {@Reasons}", dto.Email);
+
+                        throw new HandleException("Login not allowed.", 403, errors);
+                    }
+
+                    if (await _userManager.IsLockedOutAsync(user))
+                    {
+                        _logger.Warn("Login failed. Reason: User is locked out: {Email}", dto.Email);
+                        throw new HandleException("Login failed.", 400, new List<string> { "Account is locked out." });
+                    }
+
+                    if (!await _userManager.HasPasswordAsync(user))
+                    {
+                        _logger.Warn("Login failed. Reason: User has no password set: {Email}", dto.Email);
+                        throw new HandleException("Login failed.", 400, new List<string> { "No password set for this account." });
+                    }
+
+                    _logger.Warn("Login failed. Reason: Invalid password for user {Email}", dto.Email);
+                    throw new HandleException("Login failed.", 400, new List<string> { "Incorrect password." });
+                }
 
                 var domainUser = new ApplicationUser { Id = user.Id, UserName = user.UserName!, Email = user.Email! };
-                var token = _jwtTokenGenerator.GenerateToken(domainUser);
-                return token;
+
+                return _jwtTokenGenerator.GenerateToken(domainUser);
+            }
+            catch (HandleException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error in LoginAsync for {Email}", dto.Email);
+                _logger.Error("Unexpected error in LoginAsync for {Email}", ex, dto.Email);
                 throw new HandleException("An unexpected error occurred during login.", 500);
             }
         }

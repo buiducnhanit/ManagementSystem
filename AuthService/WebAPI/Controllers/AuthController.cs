@@ -1,5 +1,6 @@
 ﻿using ApplicationCore.DTOs;
 using ApplicationCore.Interfaces;
+using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -30,13 +31,13 @@ namespace WebAPI.Controllers
                     return BadRequest("Registration failed.");
                 }
 
-                _logger.Info("User {Email} registered successfully.", dto.Email);
+                _logger.Info($"User {dto.Email} registered successfully.");
                 return Ok(ApiResponse<string>.SuccessResponse(token, "Register successful"));
             }
-            catch (Exception ex)
+            catch (HandleException ex)
             {
-                _logger.Error("Unexpected error in Register for {Email}", ex, dto.Email);
-                return StatusCode(500, "Internal server error.");
+                _logger.Error($"Unexpected error in Register for {dto.Email}", ex);
+                return BadRequest(ApiResponse<string>.FailureResponse("User registration failed.", 400, ex.Errors));
             }
         }
 
@@ -51,13 +52,13 @@ namespace WebAPI.Controllers
                     return Unauthorized("Invalid credentials.");
                 }
 
-                _logger.Info("User {Email} logged in successfully.", dto.Email);
+                _logger.Info($"User {dto.Email} logged in successfully.");
                 return Ok(ApiResponse<string>.SuccessResponse(token, "Login successful"));
             }
-            catch (Exception ex)
+            catch (HandleException ex)
             {
-                _logger.Error("Unexpected error in Login for {Email}", ex, dto.Email);
-                return StatusCode(500, "Internal server error.");
+                _logger.Error($"Unexpected error in Login for {dto.Email}", ex);
+                return BadRequest(ApiResponse<string>.FailureResponse("User logged failed.", 400, ex.Errors));
             }
         }
     }

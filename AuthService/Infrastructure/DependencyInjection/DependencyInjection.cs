@@ -42,7 +42,7 @@ namespace Infrastructure.DependencyInjection
                 options.User.RequireUniqueEmail = false;
 
                 // Required Confirm Email 
-                options.SignIn.RequireConfirmedEmail = true;
+                options.SignIn.RequireConfirmedEmail = false;
             });
 
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();

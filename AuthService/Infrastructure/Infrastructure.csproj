@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\code\ManagementUser\ManagementSystem.Shared\ManagementSystem.Shared\ManagementSystem.Shared.csproj" />
+    <ProjectReference Include="..\..\ManagementSystem.Shared\ManagementSystem.Shared\ManagementSystem.Shared.csproj" />
     <ProjectReference Include="..\ApplicationCore\ApplicationCore.csproj" />
   </ItemGroup>
 
