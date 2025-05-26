@@ -1,6 +1,6 @@
 ﻿namespace ManagementSystem.Shared.Common.Entities
 {
-    public abstract class BaseEntity : IEntity<Guid>, IAuditableEntity, ISoftDeletable
+    public abstract class BaseEntity
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -10,8 +10,6 @@ namespace ManagementSystem.Shared.Common.Logging
             hostBuilder.UseSerilog((ctx, lc) => lc
                 .ReadFrom.Configuration(ctx.Configuration)
                 .Enrich.FromLogContext()
-                .WriteTo.Console()
-                .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
             );
         }
     }
