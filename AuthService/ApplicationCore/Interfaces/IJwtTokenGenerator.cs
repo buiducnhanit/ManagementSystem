@@ -4,6 +4,6 @@ namespace Infrastructure.JWT
 {
     public interface IJwtTokenGenerator
     {
-        string GenerateToken(ApplicationUser user);
+        Task<string> GenerateTokenAsync(ApplicationUser user);
     }
 }

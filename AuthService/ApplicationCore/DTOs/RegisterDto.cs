@@ -4,7 +4,7 @@ namespace ApplicationCore.DTOs
 {
     public class RegisterDto
     {
-        [Required]
+        [Required(ErrorMessage = "Username is required.")]
         [MinLength(3)]
         public string UserName { get; set; } = string.Empty;
 
@@ -14,7 +14,7 @@ namespace ApplicationCore.DTOs
         [MinLength(3)]
         public string? LastName { get; set; } = null;
 
-        [Required]
+        [Required(ErrorMessage = "Password is required.")]
         [MinLength(6)]
         [MaxLength(20)]
         [DataType(DataType.Password)]

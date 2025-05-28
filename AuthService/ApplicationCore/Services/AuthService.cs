@@ -4,7 +4,9 @@ using ApplicationCore.Interfaces;
 using Infrastructure.JWT;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
 namespace ApplicationCore.Services
@@ -17,9 +19,10 @@ namespace ApplicationCore.Services
         private readonly ICustomLogger<AuthService> _logger;
         private readonly IConfiguration _configuration;
         private readonly ISendMailService _sendMailService;
+        private readonly IRefreshTokenService _refreshTokenService;
 
         public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthService> logger,
-            IConfiguration configuration, ISendMailService sendMailService)
+            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -27,6 +30,7 @@ namespace ApplicationCore.Services
             _logger = logger;
             _configuration = configuration;
             _sendMailService = sendMailService;
+            _refreshTokenService = refreshTokenService;
         }
 
         public async Task<string?> RegisterAsync(RegisterDto dto)
@@ -79,13 +83,16 @@ namespace ApplicationCore.Services
             }
         }
 
-        public async Task<string?> LoginAsync(LoginDto dto)
+        public async Task<LoginResponseDto?> LoginAsync(LoginDto dto, string clientIp)
         {
             try
             {
                 var user = await _userManager.FindByEmailAsync(dto.Email);
                 if (user == null)
-                    throw new HandleException("Email does not exit.", 404);
+                {
+                    _logger.Warn("Login failed. Reason: User not found for email {Email}", dto.Email);
+                    throw new HandleException("Invalid credentials.", 401, new List<string> { "Email or password incorrect." });
+                }    
 
                 var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, false);
                 if (!result.Succeeded)
@@ -121,9 +128,26 @@ namespace ApplicationCore.Services
                     throw new HandleException("Login failed.", 400, new List<string> { "Incorrect password." });
                 }
 
-                var domainUser = new ApplicationUser { Id = user.Id, UserName = user.UserName!, Email = user.Email! };
+                await _userManager.UpdateSecurityStampAsync(user);
+                _logger.Info("Security stamp updated for user {UserId} ({Email}).", user.Id, user.Email);
 
-                return _jwtTokenGenerator.GenerateToken(domainUser);
+                await _refreshTokenService.RevokeAllTokensForUserAsync(user.Id, "New login detected", clientIp);
+                _logger.Info("Revoked all existing refresh tokens for user {UserId} ({Email}) due to new login.", user.Id, user.Email);
+
+                var accessToken = await _jwtTokenGenerator.GenerateTokenAsync(user);
+                var accessTokenExpires = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]!));
+                _logger.Info("Generated new access token for user {UserId} ({Email}).", user.Id, user.Email);
+
+                var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user, clientIp);
+                _logger.Info("Generated new refresh token for user {UserId} ({Email}).", user.Id, user.Email);
+
+                return new LoginResponseDto
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken.Token,
+                    ExpiresIn = accessTokenExpires,
+                    UserId = user.Id
+                };
             }
             catch (HandleException)
             {

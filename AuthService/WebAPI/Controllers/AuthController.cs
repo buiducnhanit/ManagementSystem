@@ -3,6 +3,7 @@ using ApplicationCore.Interfaces;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebAPI.Controllers
@@ -44,18 +45,20 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             try
             {
-                var token = await _authService.LoginAsync(dto);
-                if (token == null)
+                var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+                var loginResponse = await _authService.LoginAsync(dto, clientIp);
+                if (loginResponse == null)
                 {
-                    return Unauthorized("Invalid credentials.");
+                    return Unauthorized(ApiResponse<string>.FailureResponse("Invalid credentials.", 401));
                 }
 
                 _logger.Info($"User {dto.Email} logged in successfully.");
-                return Ok(ApiResponse<string>.SuccessResponse(token, "Login successful"));
+                return Ok(ApiResponse<LoginResponseDto>.SuccessResponse(loginResponse, "Login successful"));
             }
             catch (HandleException ex)
             {
