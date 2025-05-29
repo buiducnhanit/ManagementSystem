@@ -6,7 +6,7 @@ namespace ApplicationCore.Interfaces
     {
         Task<RefreshToken> GenerateRefreshTokenAsync(ApplicationUser user, string? clientIp);
         Task<(string newAccessToken, RefreshToken newRefreshToken)?> RotateRefreshTokenAsync(string oldRefreshToken, string userId, string? clientIp);
-        Task RevokeAllTokensForUserAsync(Guid userId, string reason, string? clientIp);
+        Task RevokeAllTokensForUserAsync(string userId, string reason, string? clientIp);
         Task RevokeSpecificTokenAsync(string tokenString, string userId, string reason, string? clientIp);
     }
 }

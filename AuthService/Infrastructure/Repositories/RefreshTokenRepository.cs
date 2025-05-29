@@ -20,10 +20,11 @@ namespace ApplicationCore.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<RefreshToken>> GetAllActiveForUserAsync(Guid userId)
+        public async Task<List<RefreshToken>> GetAllActiveForUserAsync(string userId)
         {
             return await _context.RefreshTokens
-                .Where(rt => rt.UserId == userId && rt.IsActive)
+                .Where(rt => rt.UserId.ToString() == userId && !rt.IsRevoked && rt.ExpiryTime >= DateTime.UtcNow)
+                .Include(rt => rt.User)
                 .ToListAsync();
         }
 

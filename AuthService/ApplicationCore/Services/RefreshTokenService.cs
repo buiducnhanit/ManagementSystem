@@ -27,7 +27,7 @@ namespace ApplicationCore.Services
 
         public async Task<RefreshToken> GenerateRefreshTokenAsync(ApplicationUser user, string? clientIp)
         {
-            var refreshTokenString = await _jwtTokenGenerator.GenerateTokenAsync(user);
+            var refreshTokenString = _jwtTokenGenerator.GenerateFreshTokenString();
             var refreshTokenExpiryTime = DateTime.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenDurationInDays"]!));
 
             var refreshToken = new RefreshToken
@@ -36,15 +36,17 @@ namespace ApplicationCore.Services
                 UserId = user.Id,
                 ExpiryTime = refreshTokenExpiryTime,
                 CreatedAt = DateTime.UtcNow,
+                LastUsed = DateTime.UtcNow,
                 IsRevoked = false,
+                RevokedByIp = clientIp,
             };
 
             await _refreshTokenRepository.AddAsync(refreshToken);
-            _logger.Info("Generated new refresh token for user {UserId} with expiry {ExpiryTime}", user.Id, refreshToken.ExpiryTime.ToString());
+            _logger.Info($"Generated new refresh token for user {user.Id} with expiry {refreshToken.ExpiryTime}");
             return refreshToken;
         }
 
-        public async Task RevokeAllTokensForUserAsync(Guid userId, string reason, string? clientIp)
+        public async Task RevokeAllTokensForUserAsync(string userId, string reason, string? clientIp)
         {
             var existingTokens = await _refreshTokenRepository.GetAllActiveForUserAsync(userId);
 
@@ -55,6 +57,7 @@ namespace ApplicationCore.Services
                 token.ReasonRevoked = reason;
                 token.RevokedByIp = clientIp;
                 await _refreshTokenRepository.UpdateAsync(token);
+                _logger.Info($"Revoked refresh token for user {userId} with reason: {reason}");
             }
         }
 
@@ -63,7 +66,7 @@ namespace ApplicationCore.Services
            var token = await _refreshTokenRepository.GetAsync(tokenString, userId);
             if (token == null || !token.IsActive)
             {
-                _logger.Warn("Attempted to revoke a non-existing or inactive refresh token for user {UserId}", userId);
+                _logger.Warn($"Attempted to revoke a non-existing or inactive refresh token for user {userId}");
                 return;
             }
             token.IsRevoked = true;
@@ -71,7 +74,7 @@ namespace ApplicationCore.Services
             token.ReasonRevoked = reason;
             token.RevokedByIp = clientIp;
             await _refreshTokenRepository.UpdateAsync(token);
-            _logger.Info("Revoked refresh token for user {UserId} with reason: {Reason}", userId, reason);
+            _logger.Info($"Revoked refresh token for user {userId} with reason: {reason}");
         }
 
         public async Task<(string newAccessToken, RefreshToken newRefreshToken)?> RotateRefreshTokenAsync(string oldRefreshToken, string userId, string? clientIp)
@@ -80,7 +83,23 @@ namespace ApplicationCore.Services
 
             if (existingToken == null || !existingToken.IsActive)
             {
-                _logger.Warn("Attempted to rotate a non-existing or inactive refresh token for user {UserId}", userId);
+                _logger.Warn($"Attempted to rotate a non-existing or inactive refresh token for user {userId}");
+                return null;
+            }
+
+            var timeSinceLastUsed = DateTime.UtcNow - existingToken.LastUsed;
+            var _idleSessionTimeoutHours = Convert.ToInt32(_configuration["Jwt:IdleSessionTimeoutInHours"]!);
+            if (timeSinceLastUsed.TotalMinutes >= _idleSessionTimeoutHours)
+            {
+                _logger.Warn($"Refresh token for user {userId} has been inactive for too long. Last used: {existingToken.LastUsed}, now: {DateTime.UtcNow}");
+                await RevokeAllTokensForUserAsync(userId, $"Session idle timeout exceeded ({_idleSessionTimeoutHours} hours)", clientIp);
+                return null;
+            }
+
+            if (existingToken.IsRevoked || existingToken.ExpiryTime < DateTime.UtcNow)
+            {
+                _logger.Warn($"Attempted to rotate a revoked or expired refresh token {existingToken.Id} for user {userId}. IsRevoked: {existingToken.IsRevoked}, Expired: {existingToken.ExpiryTime < DateTime.UtcNow}");
+                await RevokeAllTokensForUserAsync(userId, "Attempt to use revoked/expired token for rotation", clientIp);
                 return null;
             }
 
@@ -88,9 +107,9 @@ namespace ApplicationCore.Services
             existingToken.RevokedDate = DateTime.UtcNow;
             existingToken.ReasonRevoked = "Rotated for new token";
             existingToken.RevokedByIp = clientIp;
-            await _refreshTokenRepository.UpdateAsync(existingToken);
+            await _refreshTokenRepository.UpdateAsync(existingToken);        
+            _logger.Info($"Revoked old refresh token for user {userId} with reason: {existingToken.ReasonRevoked}");
 
-            _logger.Info("Revoked old refresh token for user {UserId} with reason: {Reason}", userId, existingToken.ReasonRevoked);
             var user = existingToken.User ?? await _userManager.FindByIdAsync(userId);
             if (user == null)
             {

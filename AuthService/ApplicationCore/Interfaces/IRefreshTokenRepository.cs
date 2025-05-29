@@ -7,7 +7,7 @@ namespace ApplicationCore.Interfaces
         Task AddAsync(RefreshToken token);
         Task<RefreshToken?> GetAsync(string token, string userId);
         Task UpdateAsync(RefreshToken token);
-        Task<List<RefreshToken>> GetAllActiveForUserAsync(Guid userId);
+        Task<List<RefreshToken>> GetAllActiveForUserAsync(string userId);
         Task SaveChangesAsync();
     }
 }

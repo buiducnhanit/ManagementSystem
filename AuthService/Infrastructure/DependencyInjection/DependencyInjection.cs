@@ -21,7 +21,8 @@ namespace Infrastructure.DependencyInjection
 
             services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
                 .AddEntityFrameworkStores<IdentityDbContext>()
-                .AddDefaultTokenProviders();
+                .AddDefaultTokenProviders()
+                .AddRoles<IdentityRole<Guid>>();
 
             services.Configure<IdentityOptions>(options =>
             {
@@ -44,11 +45,18 @@ namespace Infrastructure.DependencyInjection
                 options.User.RequireUniqueEmail = false;
 
                 // Required Confirm Email 
-                options.SignIn.RequireConfirmedEmail = true;
+                options.SignIn.RequireConfirmedEmail = false;
+            });
+
+            services.Configure<SecurityStampValidatorOptions>(options =>
+            {
+                options.ValidationInterval = TimeSpan.FromMinutes(0);
             });
 
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+            services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 
             // Configure email services
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));

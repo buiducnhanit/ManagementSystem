@@ -4,9 +4,7 @@ using ApplicationCore.Interfaces;
 using Infrastructure.JWT;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
 namespace ApplicationCore.Services
@@ -66,7 +64,7 @@ namespace ApplicationCore.Services
                 var body = $"<p>Hello {user.UserName},</p>" +
                            $"<p>Click <a href='{confirmationLink}'>here</a> to confirm your email address.</p>";
 
-                await _sendMailService.SendEmailAsync(user.Email!, subject, body, isHtml: true);
+                //await _sendMailService.SendEmailAsync(user.Email!, subject, body, isHtml: true);
 
                 _logger.Info("User {Email} registered successfully and confirmation email sent.", user.Email);
 
@@ -92,7 +90,7 @@ namespace ApplicationCore.Services
                 {
                     _logger.Warn("Login failed. Reason: User not found for email {Email}", dto.Email);
                     throw new HandleException("Invalid credentials.", 401, new List<string> { "Email or password incorrect." });
-                }    
+                }
 
                 var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, false);
                 if (!result.Succeeded)
@@ -131,7 +129,7 @@ namespace ApplicationCore.Services
                 await _userManager.UpdateSecurityStampAsync(user);
                 _logger.Info("Security stamp updated for user {UserId} ({Email}).", user.Id, user.Email);
 
-                await _refreshTokenService.RevokeAllTokensForUserAsync(user.Id, "New login detected", clientIp);
+                await _refreshTokenService.RevokeAllTokensForUserAsync(user.Id.ToString(), "New login detected", clientIp);
                 _logger.Info("Revoked all existing refresh tokens for user {UserId} ({Email}) due to new login.", user.Id, user.Email);
 
                 var accessToken = await _jwtTokenGenerator.GenerateTokenAsync(user);
@@ -158,6 +156,30 @@ namespace ApplicationCore.Services
                 _logger.Error("Unexpected error in LoginAsync for {Email}", ex, dto.Email);
                 throw new HandleException("An unexpected error occurred during login.", 500);
             }
+        }
+
+        public async Task<ApplicationUser> GetUserByIdAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.Warn("User not found for ID {UserId}", userId);
+                throw new HandleException("User not found.", 404);
+            }
+            _logger.Info("User {UserId} ({Email}) retrieved successfully.", user.Id, user.Email);
+            return user;
+        }
+
+        public async Task UpdateSecurityStampAsync(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                _logger.Warn("User not found for ID {UserId}", id);
+                throw new HandleException("User not found.", 404);
+            }
+            await _userManager.UpdateSecurityStampAsync(user);
+            _logger.Info("Security stamp updated for user {UserId} ({Email}).", user.Id, user.Email);
         }
     }
 }

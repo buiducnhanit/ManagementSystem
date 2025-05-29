@@ -23,7 +23,7 @@ namespace Infrastructure.ExtendedServices.JWT
         {
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.UserName!),
                 new Claim(ClaimTypes.Email, user.Email!),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
@@ -53,7 +53,6 @@ namespace Infrastructure.ExtendedServices.JWT
                 rng.GetBytes(randomNumber);
                 return Convert.ToBase64String(randomNumber);
             }
-
         }
     }
 }

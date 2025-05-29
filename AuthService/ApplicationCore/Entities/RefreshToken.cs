@@ -19,6 +19,7 @@ namespace ApplicationCore.Entities
         public DateTime? RevokedDate { get; set; }
         public string? RevokedByIp { get; set; }
         public string? ReasonRevoked { get; set; }
+        public DateTime LastUsed { get; set; } = DateTime.UtcNow;
 
         [Required]
         public Guid UserId { get; set; }
