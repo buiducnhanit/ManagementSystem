@@ -25,10 +25,11 @@ namespace ApplicationCore.Services
             _configuration = configuration;
         }
 
-        public async Task<RefreshToken> GenerateRefreshTokenAsync(ApplicationUser user, string? clientIp)
+        public async Task<RefreshToken> GenerateRefreshTokenAsync(ApplicationUser user, string? clientIp, bool rememberMe = false)
         {
+            var durationDays = rememberMe ? Convert.ToInt32(_configuration["Jwt:RememberMeRefreshTokenDurationInDays"]!) : Convert.ToDouble(_configuration["Jwt:RefreshTokenDurationInDays"]!);
             var refreshTokenString = _jwtTokenGenerator.GenerateFreshTokenString();
-            var refreshTokenExpiryTime = DateTime.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenDurationInDays"]!));
+            var refreshTokenExpiryTime = DateTime.UtcNow.AddDays(durationDays);
 
             var refreshToken = new RefreshToken
             {
@@ -88,7 +89,7 @@ namespace ApplicationCore.Services
             }
 
             var timeSinceLastUsed = DateTime.UtcNow - existingToken.LastUsed;
-            var _idleSessionTimeoutHours = Convert.ToInt32(_configuration["Jwt:IdleSessionTimeoutInHours"]!);
+            var _idleSessionTimeoutHours = Convert.ToInt32(_configuration["Session:IdleSessionTimeoutInHours"]!);
             if (timeSinceLastUsed.TotalMinutes >= _idleSessionTimeoutHours)
             {
                 _logger.Warn($"Refresh token for user {userId} has been inactive for too long. Last used: {existingToken.LastUsed}, now: {DateTime.UtcNow}");

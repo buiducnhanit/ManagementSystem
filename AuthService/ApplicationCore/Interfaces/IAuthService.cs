@@ -9,5 +9,6 @@ namespace ApplicationCore.Interfaces
         Task<LoginResponseDto?> LoginAsync(LoginDto dto, string clientIp);
         Task<ApplicationUser> GetUserByIdAsync(string userId);
         Task UpdateSecurityStampAsync(string id);
+        Task<List<string>> GetUserRolesAsync(string userId);
     }
 }

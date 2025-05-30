@@ -136,7 +136,7 @@ namespace ApplicationCore.Services
                 var accessTokenExpires = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]!));
                 _logger.Info("Generated new access token for user {UserId} ({Email}).", user.Id, user.Email);
 
-                var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user, clientIp);
+                var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user, clientIp, dto.RememberMe);
                 _logger.Info("Generated new refresh token for user {UserId} ({Email}).", user.Id, user.Email);
 
                 return new LoginResponseDto
@@ -180,6 +180,19 @@ namespace ApplicationCore.Services
             }
             await _userManager.UpdateSecurityStampAsync(user);
             _logger.Info("Security stamp updated for user {UserId} ({Email}).", user.Id, user.Email);
+        }
+
+        public async Task<List<string>> GetUserRolesAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.Warn("User not found for ID {UserId}", userId);
+                throw new HandleException("User not found.", 404);
+            }
+            var roles = await _userManager.GetRolesAsync(user);
+            //_logger.Info("Roles retrieved for user {UserId} ({Email}): {@Roles}", user.Id, user.Email, roles);
+            return roles.ToList();
         }
     }
 }
