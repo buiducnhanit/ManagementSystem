@@ -141,5 +141,39 @@ namespace WebAPI.Controllers
                 return BadRequest(ApiResponse<string>.FailureResponse("Logout failed.", 400, ex.Errors));
             }
         }
+
+        [Authorize]
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetProfile()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    _logger.Warn("Profile request with no user ID found in claims.");
+                    return BadRequest(ApiResponse<string>.FailureResponse("User not authenticated.", 400));
+                }
+                var user = await _authService.GetUserByIdAsync(userId);
+                if (user == null)
+                {
+                    _logger.Warn($"Profile request for non-existing user ID {userId}.");
+                    return NotFound(ApiResponse<string>.FailureResponse("User not found.", 404));
+                }
+                var profileDto = new UserProfileDto
+                {
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    Roles = await _authService.GetUserRolesAsync(user.Id.ToString())
+                };
+                _logger.Info($"User profile retrieved successfully for {user.Email}.");
+                return Ok(ApiResponse<UserProfileDto>.SuccessResponse(profileDto, "Profile retrieved successfully."));
+            }
+            catch (HandleException ex)
+            {
+                _logger.Error($"Unexpected error in GetProfile for user ID {User.FindFirstValue(ClaimTypes.NameIdentifier)}", ex);
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to retrieve profile.", 400, ex.Errors));
+            }
+        }
     }
 }
