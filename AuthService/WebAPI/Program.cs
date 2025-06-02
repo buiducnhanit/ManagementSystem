@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using Infrastructure.DependencyInjection;
 using ManagementSystem.Shared.Common.DependencyInjection;
+using ManagementSystem.Shared.Common.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -62,20 +63,20 @@ builder.Services.AddSwaggerGen(option =>
 
 var app = builder.Build();
 
-//using (var scope = app.Services.CreateScope())
-//{
-//    var services = scope.ServiceProvider;
-//    try
-//    {
-//        await Infrastructure.Data.SeedData.InitializeAsync(services);
-//    }
-//    catch (Exception ex)
-//    {
-//        var logger = services.GetRequiredService<ICustomLogger<Program>>();
-//        logger.Error("An error occurred while initializing the database.", ex);
-//        throw;
-//    }
-//}
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        await Infrastructure.Data.SeedData.InitializeAsync(services);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ICustomLogger<Program>>();
+        logger.Error("An error occurred while initializing the database.", ex);
+        throw;
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
