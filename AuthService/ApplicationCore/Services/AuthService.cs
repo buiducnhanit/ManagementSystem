@@ -64,7 +64,7 @@ namespace ApplicationCore.Services
                 var body = $"<p>Hello {user.UserName},</p>" +
                            $"<p>Click <a href='{confirmationLink}'>here</a> to confirm your email address.</p>";
 
-                //await _sendMailService.SendEmailAsync(user.Email!, subject, body, isHtml: true);
+                await _sendMailService.SendEmailAsync(user.Email!, subject, body, isHtml: true);
 
                 _logger.Info("User {Email} registered successfully and confirmation email sent.", user.Email);
 
