@@ -1,5 +1,6 @@
 ﻿using ApplicationCore.DTOs;
 using ApplicationCore.Interfaces;
+using Asp.Versioning;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;
@@ -9,8 +10,9 @@ using System.Security.Claims;
 
 namespace WebAPI.Controllers
 {
-    [Route("api/auth")]
     [ApiController]
+    [Route("api/v{version:apiVersion}/auth")]
+    [ApiVersion("1.0")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -55,13 +57,14 @@ namespace WebAPI.Controllers
             try
             {
                 var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
-                var loginResponse = await _authService.LoginAsync(dto, clientIp);
+                var loginTime = DateTime.UtcNow;
+                var loginResponse = await _authService.LoginAsync(dto, clientIp!);
                 if (loginResponse == null)
                 {
                     return Unauthorized(ApiResponse<string>.FailureResponse("Invalid credentials.", 401));
                 }
 
-                _logger.Info($"User {dto.Email} logged in successfully.");
+                _logger.Info($"User {dto.Email} logged in successfully from IP: {clientIp} at UTC: {loginTime}.");
                 return Ok(ApiResponse<LoginResponseDto>.SuccessResponse(loginResponse, "Login successful"));
             }
             catch (HandleException ex)

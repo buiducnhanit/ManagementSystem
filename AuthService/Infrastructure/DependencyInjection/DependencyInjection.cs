@@ -17,16 +17,11 @@ namespace Infrastructure.DependencyInjection
     {
         public static IServiceCollection AddInfrastructureService(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddSharedServices<IdentityDbContext>(configuration, "DefaultConnection");
+            services.AddSharedServices<IdentityDbContext, ApplicationUser, IdentityRole<Guid>, Guid>(configuration, "DefaultConnection");
 
-            services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
-                .AddEntityFrameworkStores<IdentityDbContext>()
-                .AddDefaultTokenProviders()
-                .AddRoles<IdentityRole<Guid>>();
-
-            services.Configure<IdentityOptions>(options =>
+            services.AddIdentityCore<ApplicationUser>(options =>
             {
-                // Password settings.
+                // Cấu hình mật khẩu
                 options.Password.RequireDigit = true;
                 options.Password.RequireLowercase = true;
                 options.Password.RequireNonAlphanumeric = true;
@@ -34,20 +29,27 @@ namespace Infrastructure.DependencyInjection
                 options.Password.RequiredLength = 6;
                 options.Password.RequiredUniqueChars = 1;
 
-                // Lockout settings.
+                // Cấu hình lockout
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.AllowedForNewUsers = true;
 
-                // User settings.
+                // Cấu hình người dùng
                 options.User.AllowedUserNameCharacters =
-                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
                 options.User.RequireUniqueEmail = false;
 
-                // Required Confirm Email 
+                // Cấu hình xác thực email
                 options.SignIn.RequireConfirmedEmail = false;
-            });
+            })
+                    .AddRoles<IdentityRole<Guid>>()
+                    .AddEntityFrameworkStores<IdentityDbContext>()
+                    .AddDefaultTokenProviders();
 
+            services.AddHttpContextAccessor();
+            services.AddScoped<SignInManager<ApplicationUser>>();
+            services.AddScoped<RoleManager<IdentityRole<Guid>>>();
+            services.AddScoped<SecurityStampValidator<ApplicationUser>>();
             services.Configure<SecurityStampValidatorOptions>(options =>
             {
                 options.ValidationInterval = TimeSpan.FromMinutes(0);

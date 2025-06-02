@@ -1,23 +1,41 @@
+using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
 using Infrastructure.DependencyInjection;
 using ManagementSystem.Shared.Common.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using WebAPI.Configure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.ConfigureSerilog();
 // Add services to the container.
-
+builder.Host.ConfigureSerilog();
+builder.Services.AddInfrastructureService(builder.Configuration);
+builder.Services.AddAuthorization();
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+
+// Configure API Versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new UrlSegmentApiVersionReader(),
+        new HeaderApiVersionReader("X-Api-Version"));
+})
+.AddMvc()
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+
 builder.Services.AddSwaggerGen(option =>
 {
-    option.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Management System API",
-        Version = "v1",
-        Description = "API for Management System",
-    });
     option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -41,7 +59,6 @@ builder.Services.AddSwaggerGen(option =>
         }
     });
 });
-builder.Services.AddInfrastructureService(builder.Configuration);
 
 var app = builder.Build();
 
@@ -64,15 +81,23 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        var descriptions = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+        foreach (var description in descriptions.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+        }
+    });
 }
-
-app.UseInfrastructurePolicy();
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseInfrastructurePolicy();
 
 app.Run();
