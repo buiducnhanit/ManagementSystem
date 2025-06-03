@@ -16,13 +16,11 @@ namespace WebAPI.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
-        private readonly IRefreshTokenService _refreshTokenService;
         private readonly ICustomLogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService, IRefreshTokenService refreshTokenService, ICustomLogger<AuthController> logger)
+        public AuthController(IAuthService authService, ICustomLogger<AuthController> logger)
         {
             _authService = authService;
-            _refreshTokenService = refreshTokenService;
             _logger = logger;
         }
 
@@ -41,7 +39,7 @@ namespace WebAPI.Controllers
                 await _authService.RegisterAsync(dto);
 
                 _logger.Info($"User {dto.Email} registered successfully. Confirmation email sent.");
-                return Ok(ApiResponse<string>.SuccessResponse(null, "Registration successful. Please check your email to confirm your account."));
+                return Ok(ApiResponse<string>.SuccessResponse("Registration successful. Please check your email to confirm your account."));
             }
             catch (HandleException ex)
             {
@@ -87,23 +85,10 @@ namespace WebAPI.Controllers
                     return BadRequest(ApiResponse<string>.FailureResponse("Invalid refresh token data.", 400, errors));
                 }
 
-                var refreshedToken = await _refreshTokenService.RotateRefreshTokenAsync(dto.RefreshToken, dto.UserId, HttpContext.Connection.RemoteIpAddress?.ToString());
+                var ipClient = HttpContext.Connection.RemoteIpAddress?.ToString();
+                var refreshTokenResponse = await _authService.RefreshTokenAsync(dto, ipClient);
 
-                if (refreshedToken == null)
-                {
-                    _logger.Warn($"Failed to refresh token for user {dto.UserId}. Invalid or expired refresh token.");
-                    return Unauthorized(ApiResponse<string>.FailureResponse("Invalid or expired refresh token.", 401));
-                }
-
-                var (newAccessToken, newRefreshToken) = refreshedToken.Value;
-                _logger.Info($"User {dto.UserId} refreshed token successfully.");
-
-                return Ok(ApiResponse<RefreshTokenResponseDto>.SuccessResponse(new RefreshTokenResponseDto
-                {
-                    AccessToken = newAccessToken,
-                    RefreshToken = newRefreshToken.Token,
-                    ExpiryTime = newRefreshToken.ExpiryTime
-                }, "Token refreshed successfully."));
+                return Ok(ApiResponse<RefreshTokenResponseDto>.SuccessResponse(refreshTokenResponse, "Token refreshed successfully."));
             }
             catch (HandleException ex)
             {
@@ -125,18 +110,10 @@ namespace WebAPI.Controllers
                     return BadRequest(ApiResponse<string>.FailureResponse("User not authenticated.", 400));
                 }
 
-                var user = await _authService.GetUserByIdAsync(userId);
-                if (user == null)
-                {
-                    _logger.Warn($"Logout attempt for non-existing user ID {userId}.");
-                    return NotFound(ApiResponse<string>.FailureResponse("User not found.", 404));
-                }
+                await _authService.LogoutAsync(userId, HttpContext.Connection.RemoteIpAddress?.ToString());
+                await _authService.UpdateSecurityStampAsync(userId);
 
-                await _refreshTokenService.RevokeAllTokensForUserAsync(user.Id.ToString(), "User logged out", HttpContext.Connection.RemoteIpAddress?.ToString());
-                _logger.Info($"User {user.Email} logged out successfully. All tokens revoked.");
-                await _authService.UpdateSecurityStampAsync(user.Id.ToString());
-
-                return Ok(ApiResponse<string>.SuccessResponse(null, "Logout successful."));
+                return Ok(ApiResponse<string>.SuccessResponse("Logout successful."));
             }
             catch (HandleException ex)
             {
@@ -146,7 +123,7 @@ namespace WebAPI.Controllers
         }
 
         [Authorize]
-        [HttpGet("profile")]
+        [HttpGet("get-profile")]
         public async Task<IActionResult> GetProfile()
         {
             try
@@ -176,6 +153,104 @@ namespace WebAPI.Controllers
             {
                 _logger.Error($"Unexpected error in GetProfile for user ID {User.FindFirstValue(ClaimTypes.NameIdentifier)}", ex);
                 return BadRequest(ApiResponse<string>.FailureResponse("Failed to retrieve profile.", 400, ex.Errors));
+            }
+        }
+
+        [Authorize]
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest dto)
+        {
+            try
+            {
+                await _authService.ForgotPasswordAsyns(dto);
+                _logger.Info("Generate reset password token successfully for User: {Email}", dto.Email);
+
+                return Ok(ApiResponse<string>.SuccessResponse("Generate reset password token successfully. Confirm your email to set new password."));
+            }
+            catch (HandleException ex)
+            {
+                _logger.Error("Unexpected error when generate reset password token.", ex);
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to generate reset password token.", 400, ex.Errors));
+            }
+        }
+
+        [Authorize]
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordRequest dto)
+        {
+            try
+            {
+                var user = await _authService.GetUserByIdAsync(dto.UserId);
+                var result = await _authService.ResetPasswordAsyns(dto);
+                _logger.Info("Reset password successfully for User: {Email}", user.Email);
+
+                return Ok(ApiResponse<string>.SuccessResponse("Reset password successfully. Confirm your email to set new password."));
+            }
+            catch (HandleException ex)
+            {
+                _logger.Error("Unexpected error when reset password.", ex);
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to reset password.", 400, ex.Errors));
+            }
+        }
+
+        [HttpPost("confirm-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.Token))
+                {
+                    _logger.Warn("Email confirmation attempted with missing user ID or token.");
+                    return BadRequest(ApiResponse<string>.FailureResponse("Invalid email confirmation request.", 400));
+                }
+                var result = await _authService.ConfirmEmailAsync(request);
+                if (!result)
+                {
+                    _logger.Warn("Email confirmation failed for user ID {userId} with token {token}.", request.UserId, request.Token);
+                    return BadRequest(ApiResponse<string>.FailureResponse("Email confirmation failed.", 400));
+                }
+                _logger.Info("Email confirmed successfully for user ID {userId}.", request.UserId);
+                return Ok(ApiResponse<string>.SuccessResponse("Email confirmed successfully."));
+            }
+            catch (HandleException ex)
+            {
+                _logger.Error("Unexpected error in ConfirmEmail for user ID {userId}", ex, request.UserId);
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to confirm email.", 400, ex.Errors));
+            }
+        }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.OldPassword) || string.IsNullOrEmpty(request.NewPassword))
+                {
+                    _logger.Warn("Change password attempted with missing user ID or passwords.");
+                    return BadRequest(ApiResponse<string>.FailureResponse("Invalid change password request.", 400));
+                }
+
+                if (request.NewPassword != request.ConfirmPassword)
+                {
+                    _logger.Warn("Change password failed for user ID {userId} due to password mismatch.", request.UserId);
+                    return BadRequest(ApiResponse<string>.FailureResponse("New password and confirmation do not match.", 400));
+                }
+
+                var result = await _authService.ChangePasswordAsync(request);
+                if (!result)
+                {
+                    _logger.Warn("Change password failed for user ID {userId}.", request.UserId);
+                    return BadRequest(ApiResponse<string>.FailureResponse("Change password failed.", 400));
+                }
+                _logger.Info("Password changed successfully for user ID {userId}.", request.UserId);
+                return Ok(ApiResponse<string>.SuccessResponse("Password changed successfully."));
+            }
+            catch (HandleException ex)
+            {
+                _logger.Error("Unexpected error in ChangePassword for user ID {userId}", ex, request.UserId);
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to change password.", 400, ex.Errors));
             }
         }
     }

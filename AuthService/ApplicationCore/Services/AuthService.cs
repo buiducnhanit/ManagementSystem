@@ -6,6 +6,7 @@ using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using System.Web;
 
 namespace ApplicationCore.Services
 {
@@ -191,8 +192,196 @@ namespace ApplicationCore.Services
                 throw new HandleException("User not found.", 404);
             }
             var roles = await _userManager.GetRolesAsync(user);
-            //_logger.Info("Roles retrieved for user {UserId} ({Email}): {@Roles}", user.Id, user.Email, roles);
+            _logger.Info("Roles retrieved for user {UserId} ({Email}): {@Roles}", user.Id, user.Email, roles);
             return roles.ToList();
+        }
+
+        public async Task<RefreshTokenResponseDto> RefreshTokenAsync(RefreshTokenRequestDto dto, string? clientIp)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(dto.UserId);
+                if (user == null)
+                {
+                    _logger.Warn("User not found for ID {UserId}", dto.UserId);
+                    throw new HandleException("User not found.", 404);
+                }
+                var refreshedToken = await _refreshTokenService.RotateRefreshTokenAsync(dto.RefreshToken, dto.UserId, clientIp);
+
+                if (refreshedToken == null)
+                {
+                    _logger.Warn("Failed to refresh token for user {UserId}. Invalid or expired refresh token.", dto.UserId);
+                    throw new HandleException("Invalid or expired refresh token.", 401);
+                }
+
+                var newAccessToken = refreshedToken.Value.newAccessToken;
+                var newRefreshToken = refreshedToken.Value.newRefreshToken;
+                _logger.Info("User {UserId} refreshed token successfully.", dto.UserId);
+
+                return new RefreshTokenResponseDto
+                {
+                    AccessToken = newAccessToken,
+                    RefreshToken = newRefreshToken.Token,
+                    ExpiryTime = newRefreshToken.ExpiryTime
+                };
+            }
+            catch (HandleException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unexpected error in RefreshTokenAsync for {UserId}", ex, dto.UserId);
+                throw new HandleException("An unexpected error occurred during token refresh.", 500);
+            }
+        }
+
+        public async Task LogoutAsync(string userId, string? clientIp)
+        {
+            try
+            {
+                string reason = "User logged out";
+                await _refreshTokenService.RevokeAllTokensForUserAsync(userId, reason, clientIp);
+                _logger.Info("All tokens revoked for user {userId} due to logout. Reason: {reason}", userId, reason);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error revoking tokens for user {userId} during logout.", ex, userId);
+                throw new HandleException("An unexpected error occurred during logout.", 500);
+            }
+        }
+
+        public async Task<ApplicationUser> GetUserByEmailAsync(string email)
+        {
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user == null)
+                {
+                    _logger.Warn("User not found for email {Email}", email);
+                    throw new HandleException("User not found.", 404);
+                }
+
+                _logger.Info("User {UserId} ({Email}) retrieved successfully.", user.Id, user.Email);
+                return user;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Fail to retrieved user.", ex);
+                throw new HandleException("An unexpected error occurred during logout.", 500);
+            }
+        }
+
+        public async Task ForgotPasswordAsyns(ForgotPasswordRequest request)
+        {
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(request.Email);
+                if (user == null)
+                {
+                    _logger.Info("Email is invalid.");
+                    throw new HandleException("Email is invalid.", 400);
+                }
+
+                string token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                _logger.Info("Generate password reset token successfull.");
+
+                // Send email to reset password
+                var resetPasswordLink = $"{_configuration["FrontendBaseUrl"]}/reset-password?userId={user.Id}&token={HttpUtility.UrlEncode(token)}";
+                await _sendMailService.SendEmailAsync(request.Email, "Reset password", $"Click the link to reset your password: <a href='{resetPasswordLink}'>Reset Password</a>");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error generate password reset token.", ex);
+                throw new HandleException("An unexpected error occurred during generate password reset token.", 500);
+            }
+        }
+
+        public async Task<bool> ResetPasswordAsyns(ResetPasswordRequest dto)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(dto.UserId);
+                if (user == null)
+                {
+                    _logger.Error("User not found.");
+                    throw new HandleException("User not found.", 404);
+                }
+
+                var result = await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
+                if (!result.Succeeded)
+                {
+                    _logger.Error("Failed to reset password.");
+                    throw new HandleException("Failed to reset password.", 400, result.Errors.Select(e => e.Description).ToList());
+                }
+
+                return result.Succeeded;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error reset password.", ex);
+                throw new HandleException("An unexpected error occurred during reset password.", 500);
+            }
+        }
+
+        public async Task<bool> ConfirmEmailAsync(ConfirmEmailRequest request)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(request.UserId);
+                if (user == null)
+                {
+                    _logger.Warn("User not found for ID {UserId}", request.UserId);
+                    throw new HandleException("User not found.", 404);
+                }
+                var result = await _userManager.ConfirmEmailAsync(user, request.Token);
+                if (!result.Succeeded)
+                {
+                    _logger.Warn("Failed to confirm email for user {UserId}.", request.UserId);
+                    throw new HandleException("Email confirmation failed.", 400, result.Errors.Select(e => e.Description).ToList());
+                }
+                _logger.Info("Email confirmed successfully for user {UserId} ({Email}).", user.Id, user.Email);
+                return true;
+            }
+            catch (HandleException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unexpected error in ConfirmEmailAsync for {userId}", ex, request.UserId);
+                throw new HandleException("An unexpected error occurred during email confirmation.", 500);
+            }
+        }
+
+        public async Task<bool> ChangePasswordAsync(ChangePasswordRequest request)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(request.UserId);
+                if (user == null)
+                {
+                    _logger.Warn("User not found for ID {UserId}", request.UserId);
+                    throw new HandleException("User not found.", 404);
+                }
+                var result = await _userManager.ChangePasswordAsync(user, request.OldPassword, request.NewPassword);
+                if (!result.Succeeded)
+                {
+                    _logger.Warn("Failed to change password for user {UserId}.", request.UserId);
+                    throw new HandleException("Failed to change password.", 400, result.Errors.Select(e => e.Description).ToList());
+                }
+                _logger.Info("Password changed successfully for user {UserId} ({Email}).", user.Id, user.Email);
+                return true;
+            }
+            catch (HandleException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unexpected error in ChangePasswordAsync for {userId}", ex, request.UserId);
+                throw new HandleException("An unexpected error occurred during password change.", 500);
+            }
         }
     }
 }
