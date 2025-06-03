@@ -13,10 +13,12 @@ namespace Infrastructure.ExtendedServices.JWT
     public class JwtTokenGenerator : IJwtTokenGenerator
     {
         private readonly IConfiguration _config;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public JwtTokenGenerator(IConfiguration config)
+        public JwtTokenGenerator(IConfiguration config, UserManager<ApplicationUser> userManager)
         {
             _config = config;
+            _userManager = userManager;
         }
 
         public async Task<string> GenerateTokenAsync(ApplicationUser user)
@@ -29,6 +31,12 @@ namespace Infrastructure.ExtendedServices.JWT
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(new ClaimsIdentityOptions().SecurityStampClaimType, user.SecurityStamp!)
             };
+
+            var roles = await _userManager.GetRolesAsync(user);
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
