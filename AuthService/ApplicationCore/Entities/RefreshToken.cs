@@ -14,7 +14,6 @@ namespace ApplicationCore.Entities
 
         [Required]
         public DateTime ExpiryTime { get; set; }
-        public bool IsRevoked { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? RevokedDate { get; set; }
         public string? RevokedByIp { get; set; }
@@ -26,6 +25,9 @@ namespace ApplicationCore.Entities
 
         [ForeignKey(nameof(UserId))]
         public ApplicationUser User { get; set; } = null!;
+
+        [NotMapped]
+        public bool IsRevoked => RevokedDate.HasValue;
 
         [NotMapped]
         public bool IsActive => !IsRevoked && ExpiryTime > DateTime.UtcNow;
