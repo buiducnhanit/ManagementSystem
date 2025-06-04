@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Infrastructure.Data;
+using ManagementSystem.Shared.Common.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.DI
@@ -7,11 +9,10 @@ namespace Infrastructure.DI
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
-            // Register DbContext with SQL Server provider
-            services.AddDbContext(configuration);
+            // Add Database Contexts,JWT Authentication and Serilog for logging
+            services.AddSharedServices<UserDbContext>(configuration, "DefaultConnection");
 
-            // Register JWT authentication scheme
-            services.AddJWTAuthentication(configuration);
+            // Add other infrastructure services here
 
             return services;
         }

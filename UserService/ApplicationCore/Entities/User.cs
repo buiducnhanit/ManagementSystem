@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ApplicationCore.Entities
 {
-    public class User : BaseEntity
+    public class User : BaseEntity<Guid>
     {
         public string FirstName { get; set; } = string.Empty;
         public string? LastName { get; set; }
