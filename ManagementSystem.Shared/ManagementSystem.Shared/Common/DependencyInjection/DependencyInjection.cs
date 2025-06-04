@@ -1,7 +1,7 @@
-﻿using ManagementSystem.Shared.Common.Logging;
+﻿using Infrastructure.DI;
+using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Middleware;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,18 +11,16 @@ namespace ManagementSystem.Shared.Common.DependencyInjection
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddSharedServices<TDbContext, TUser, TRole, TKey>(this IServiceCollection services, IConfiguration configuration, string connectionStringName) 
-            where TDbContext : DbContext 
-            where TUser : IdentityUser<TKey>
-            where TRole : IdentityRole<TKey>
-            where TKey : IEquatable<TKey>
+        public static IServiceCollection AddSharedServices<TDbContext>(this IServiceCollection services, IConfiguration configuration, string connectionStringName) where TDbContext : DbContext
         {
-            services.AddDbContext<TDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString(connectionStringName)));
+            // Add DbContext service
+            services.AddDbContextService<TDbContext>(configuration, connectionStringName);
 
+            // Add JWT authentication scheme
+            services.AddJWTAuthenticationScheme(configuration);
+
+            // Add Serilog for logging
             services.AddScoped(typeof(ICustomLogger<>), typeof(SerilogCustomLogger<>));
-
-            JWTAuthenticationScheme.AddJWTAuthenticationScheme<TUser,TKey>(services, configuration);
 
             return services;
         }

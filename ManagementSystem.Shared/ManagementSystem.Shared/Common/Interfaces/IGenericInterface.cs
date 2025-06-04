@@ -1,11 +1,21 @@
-﻿namespace ManagementSystem.Shared.Common.Interfaces
+﻿using ManagementSystem.Shared.Common.Entities;
+using System.Linq.Expressions;
+
+namespace ManagementSystem.Shared.Common.Interfaces
 {
-    public interface IGenericInterface<T> where T : class
+    public interface IGenericInterface<TEntity, TKey>
+        where TEntity : IBaseEntity<TKey>
+        where TKey : IEquatable<TKey>
     {
-        Task<IEnumerable<T>> GetAllAsync();
-        Task<T?> GetByIdAsync(Guid id);
-        Task AddAsync(T entity);
-        Task UpdateAsync(T entity);
-        Task DeleteAsync(T entity);
+        Task<IEnumerable<TEntity>> GetAllAsync();
+        Task<TEntity?> GetByIdAsync(TKey id);
+        Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate);
+        Task AddAsync(TEntity entity);
+        Task UpdateAsync(TEntity entity);
+        Task DeleteAsync(TEntity entity);
+        Task DeleteByIdAsync(TKey id);
+        Task SoftDeleteAsync(TEntity entity);
+        Task SoftDeleteByIdAsync(TKey id);
+        Task<int> SaveChangesAsync();
     }
 }

@@ -7,8 +7,8 @@ namespace ManagementSystem.Shared.Common.Middleware
         public static IApplicationBuilder UseCommonMiddlewares(this IApplicationBuilder app)
         {
             return app
-                .UseMiddleware<ExceptionHandlingMiddleware>()
-                .UseMiddleware<TraceIdEnricherMiddleware>();
+                .UseMiddleware<TraceIdEnricherMiddleware>()
+                .UseMiddleware<ExceptionHandlingMiddleware>();
         }
     }
 }
