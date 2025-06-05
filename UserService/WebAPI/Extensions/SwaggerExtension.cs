@@ -1,4 +1,6 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
+using Microsoft.OpenApi.Models;
 
 namespace WebAPI.Extensions
 {
@@ -15,7 +17,7 @@ namespace WebAPI.Extensions
                     Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
                     Name = "Authorization",
                     In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.ApiKey,
+                    Type = SecuritySchemeType.Http,
                     Scheme = "Bearer"
                 });
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -29,21 +31,40 @@ namespace WebAPI.Extensions
                                 Id = "Bearer"
                             }
                         },
-                        Array.Empty<string>()
+                        new string[] {}
                     }
                 });
+            });
+
+            // Configure API Versioning
+            services.AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.ReportApiVersions = true;
+                options.ApiVersionReader = ApiVersionReader.Combine(
+                    new UrlSegmentApiVersionReader(),
+                    new HeaderApiVersionReader("X-Api-Version"));
+            })
+            .AddMvc()
+            .AddApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
             });
 
             return services;
         }
 
-        public static IApplicationBuilder UseCustomSwagger(this IApplicationBuilder app)
+        public static IApplicationBuilder UseCustomSwagger(this IApplicationBuilder app, IApiVersionDescriptionProvider provider)
         {
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "User Service API V1");
-                c.RoutePrefix = string.Empty;
+                foreach (var description in provider.ApiVersionDescriptions)
+                {
+                    c.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+                }
             });
 
             return app;

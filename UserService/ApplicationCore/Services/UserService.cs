@@ -1,6 +1,7 @@
 ﻿using ApplicationCore.DTOs;
 using ApplicationCore.Entities;
 using ApplicationCore.Interfaces;
+using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 
 namespace ApplicationCore.Services
@@ -9,28 +10,21 @@ namespace ApplicationCore.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly ICustomLogger<UserService> _logger;
-        public UserService(IUserRepository userRepository, ICustomLogger<UserService> logger)
+        private readonly IMapperService _mapper;
+
+        public UserService(IUserRepository userRepository, ICustomLogger<UserService> logger, IMapperService mapper)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         public async Task<UserProfile> CreateUserAsync(CreateUserRequest request)
         {
             try
             {
-                var newUserProfile = new User
-                {
-                    Id = Guid.NewGuid(),
-                    FirstName = request.FirstName,
-                    LastName = request.LastName,
-                    Address = request.Address,
-                    AvatarUrl = request.AvatarUrl,
-                    //PhoneNumber = request.PhoneNumber,
-                    //DateOfBirth = request.DateOfBirth
-                };
-
-                var createdUserProfile = await _userRepository.CreateUserAsync(newUserProfile);
+                var userUpdated = _mapper.Map<CreateUserRequest, User>(request);
+                var createdUserProfile = await _userRepository.CreateUserAsync(userUpdated);
                 if (createdUserProfile == null)
                 {
                     _logger.Error("Failed to create user profile.");
@@ -38,16 +32,12 @@ namespace ApplicationCore.Services
                 }
 
                 _logger.Info("User profile created successfully.", createdUserProfile);
-                return new UserProfile
-                {
-                    Id = createdUserProfile.Id,
-                    FirstName = createdUserProfile.FirstName,
-                    LastName = createdUserProfile.LastName,
-                    Address = createdUserProfile.Address,
-                    AvatarUrl = createdUserProfile.AvatarUrl,
-                    //PhoneNumber = createdUserProfile.PhoneNumber,
-                    //DateOfBirth = createdUserProfile.DateOfBirth
-                };
+                return _mapper.Map<User, UserProfile>(createdUserProfile);
+            }
+            catch (HandleException hex)
+            {
+                _logger.Error("HandleException occurred while creating user.", hex);
+                throw;
             }
             catch (Exception ex)
             {
@@ -55,23 +45,75 @@ namespace ApplicationCore.Services
                 throw;
             }
         }
-        public Task<UserProfile> GetUserByIdAsync(Guid id)
+
+        public async Task<UserProfile> GetUserByIdAsync(Guid id)
         {
-            throw new NotImplementedException();
-        }
-        public Task<UserProfile> UpdateUserAsync(UpdateUserRequest request)
-        {
-            throw new NotImplementedException();
+            try
+            {
+                var user = await _userRepository.GetUserByIdAsync(id);
+                _logger.Info("User: {ID} retrieved successfully.", user.Id);
+
+                var userProfile = _mapper.Map<User, UserProfile>(user);
+
+                return userProfile;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error retrieving user with ID: {id}", ex);
+                throw;
+            }
         }
 
-        public Task<bool> DeleteUserAsync(Guid id)
+        public async Task<UserProfile> UpdateUserAsync(Guid id, UpdateUserRequest request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var existingUser = await _userRepository.GetUserByIdAsync(id);
+                if (existingUser == null)
+                {
+                    _logger.Warn($"User with ID: {id} not found for update.");
+                    throw new KeyNotFoundException($"User with ID: {id} not found.");
+                }
+
+                var profileUserUpdated = _mapper.Map<UpdateUserRequest, User>(request);
+                var updatedUser = await _userRepository.UpdateUserAsync(profileUserUpdated);
+                _logger.Info("User profile updated successfully.", updatedUser);
+
+                return _mapper.Map<User, UserProfile>(updatedUser);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error updating user.", ex);
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteUserAsync(Guid id)
+        {
+            try
+            {
+                return await _userRepository.DeleteUserAsync(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error deleting user with ID: {id}", ex);
+                throw;
+            }
         }
 
         public Task<IEnumerable<UserProfile>> GetAllUsersAsync()
         {
-            throw new NotImplementedException();
+            try
+            {
+                var users = _userRepository.GetAllUsersAsync();
+                _logger.Info("All users retrieved successfully.");
+                return users.ContinueWith(task => task.Result.Select(user => _mapper.Map<User, UserProfile>(user)));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error retrieving all users.", ex);
+                throw;
+            }
         }
     }
 }

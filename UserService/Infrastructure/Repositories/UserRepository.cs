@@ -1,45 +1,107 @@
 ﻿using ApplicationCore.Entities;
 using ApplicationCore.Interfaces;
-using Infrastructure.Data;
+using ManagementSystem.Shared.Common.Interfaces;
+using ManagementSystem.Shared.Common.Logging;
 
 namespace Infrastructure.Repositories
 {
     public class UserRepository : IUserRepository
     {
-        private readonly UserDbContext _context;
-        public UserRepository(UserDbContext context)
+        private readonly IGenericInterface<User, Guid> _generic;
+        private readonly ICustomLogger<UserRepository> _logger;
+
+        public UserRepository(IGenericInterface<User, Guid> generic, ICustomLogger<UserRepository> logger)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _generic = generic ?? throw new ArgumentNullException(nameof(generic));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<User> CreateUserAsync(User user)
         {
-            return await Task.Run(() =>
+            try
             {
-                if (user == null) throw new ArgumentNullException(nameof(user));
-                _context.Users.Add(user);
-                _context.SaveChanges();
+                if (user == null)
+                {
+                    _logger.Error("CreateUser request is null.");
+                    throw new ArgumentNullException(nameof(user), "User data cannot be null.");
+                }
+
+                user.Id = Guid.NewGuid();
+                await _generic.AddAsync(user);
+
                 return user;
-            });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error creating and storing user into database.", ex);
+                throw;
+            }
         }
 
-        public Task<User> GetUserByIdAsync(Guid id)
+        public async Task<User> GetUserByIdAsync(Guid id)
         {
-            throw new NotImplementedException();
-        }
-        public Task<User> UpdateUserAsync(User user)
-        {
-            throw new NotImplementedException();
+            try
+            {
+                var user = await _generic.GetByIdAsync(id);
+                if (user == null)
+                {
+                    _logger.Warn("User with ID: {id} not found.", id);
+                    throw new KeyNotFoundException($"User with ID: {id} not found.");
+                }
+
+                _logger.Info("User with ID: {ID} retrieved successfully.", id);
+                return user!;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error retrieving user with ID: {ID}", ex, id);
+                throw;
+            }
         }
 
-        public Task<bool> DeleteUserAsync(Guid id)
+        public async Task<User> UpdateUserAsync(User user)
         {
-            throw new NotImplementedException();
+            try
+            {
+                await _generic.UpdateAsync(user);
+                _logger.Info("User with ID: {Id} updated successfully.", user.Id);
+
+                return user;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error updating user.", ex);
+                throw;
+            }
         }
 
-        public Task<IEnumerable<User>> GetAllUsersAsync()
+        public async Task<bool> DeleteUserAsync(Guid id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                await _generic.SoftDeleteByIdAsync(id);
+                _logger.Info("User with ID: {ID} deleted successfully.", id);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error deleting user with ID: {ID}", ex, id);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<User>> GetAllUsersAsync()
+        {
+            try
+            {
+                return await _generic.GetAllAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error retrieving all users.", ex);
+                throw;
+            }
         }
     }
 }

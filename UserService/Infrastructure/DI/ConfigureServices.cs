@@ -1,4 +1,6 @@
-﻿using Infrastructure.Data;
+﻿using ApplicationCore.Interfaces;
+using Infrastructure.Data;
+using Infrastructure.ExtendedServices.AutoMapper;
 using ManagementSystem.Shared.Common.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +15,8 @@ namespace Infrastructure.DI
             services.AddSharedServices<UserDbContext>(configuration, "DefaultConnection");
 
             // Add other infrastructure services here
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            services.AddScoped<IMapperService, MapperService>();
 
             return services;
         }

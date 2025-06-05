@@ -1,12 +1,14 @@
 ﻿using ApplicationCore.DTOs;
 using ApplicationCore.Interfaces;
+using Asp.Versioning;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebAPI.Controllers
 {
-    [Route("api/user")]
+    [Route("api/v{version:apiVersion}/user")]
+    [ApiVersion("1.0")]
     [ApiController]
     public class UserController : ControllerBase
     {
@@ -19,7 +21,7 @@ namespace WebAPI.Controllers
             _logger = logger;
         }
 
-        [HttpPost("create")]
+        [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
         {
             try
@@ -64,7 +66,7 @@ namespace WebAPI.Controllers
             }
         }
 
-        [HttpPut("update")]
+        [HttpPut]
         public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] UpdateUserRequest request)
         {
             try
@@ -76,7 +78,7 @@ namespace WebAPI.Controllers
                     return NotFound(ApiResponse<string>.FailureResponse("User not found.", 404));
                 }
 
-                var updatedUserProfile = await _userService.UpdateUserAsync(request);
+                var updatedUserProfile = await _userService.UpdateUserAsync(userId, request);
                 _logger.Info("User updated successfully.", updatedUserProfile);
 
                 return Ok(ApiResponse<UserProfile>.SuccessResponse(updatedUserProfile, "User updated successfully."));
@@ -112,6 +114,27 @@ namespace WebAPI.Controllers
             {
                 _logger.Error($"Error deleting user with ID {id}.", ex);
                 return BadRequest(ApiResponse<string>.FailureResponse("Error deleting user."));
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            try
+            {
+                var users = await _userService.GetAllUsersAsync();
+                if (users == null || !users.Any())
+                {
+                    _logger.Warn("No users found.");
+                    return NotFound(ApiResponse<string>.FailureResponse("No users found.", 404));
+                }
+                _logger.Info("All users retrieved successfully.");
+                return Ok(ApiResponse<IEnumerable<UserProfile>>.SuccessResponse(users, "Users retrieved successfully."));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error retrieving all users.", ex);
+                return BadRequest(ApiResponse<string>.FailureResponse("Error retrieving users."));
             }
         }
     }
