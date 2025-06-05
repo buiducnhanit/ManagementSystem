@@ -2,9 +2,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Infrastructure.DI
+namespace ManagementSystem.Shared.Common.DependencyInjection
 {
-    public static class DbConntextService
+    public static class DbContextService
     {
         public static IServiceCollection AddDbContextService<TDbContext>(this IServiceCollection services, IConfiguration configuration, string connectionStringName) where TDbContext : DbContext
         {

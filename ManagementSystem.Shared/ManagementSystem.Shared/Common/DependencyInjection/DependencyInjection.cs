@@ -1,5 +1,4 @@
-﻿using Infrastructure.DI;
-using ManagementSystem.Shared.Common.Logging;
+﻿using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
