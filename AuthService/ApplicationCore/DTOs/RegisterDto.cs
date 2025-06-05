@@ -41,10 +41,10 @@ namespace ApplicationCore.DTOs
 
         [DataType(DataType.Date)]
         [Display(Name = "Date of Birth")]
-        public DateTime? dateOfBirth { get; set; }
+        public DateTime? DateOfBirth { get; set; }
 
         [Required]
         [Display(Name = "Gender")]
-        public bool gender { get; set; } = false;
+        public bool Gender { get; set; } = false;
     }
 }
