@@ -1,5 +1,6 @@
 ﻿using ApplicationCore.Entities;
 using ApplicationCore.Interfaces;
+using Infrastructure.Data;
 using ManagementSystem.Shared.Common.Interfaces;
 using ManagementSystem.Shared.Common.Logging;
 
@@ -7,10 +8,10 @@ namespace Infrastructure.Repositories
 {
     public class UserRepository : IUserRepository
     {
-        private readonly IGenericInterface<User, Guid> _generic;
+        private readonly IGenericInterface<User, Guid, UserDbContext> _generic;
         private readonly ICustomLogger<UserRepository> _logger;
 
-        public UserRepository(IGenericInterface<User, Guid> generic, ICustomLogger<UserRepository> logger)
+        public UserRepository(IGenericInterface<User, Guid, UserDbContext> generic, ICustomLogger<UserRepository> logger)
         {
             _generic = generic ?? throw new ArgumentNullException(nameof(generic));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

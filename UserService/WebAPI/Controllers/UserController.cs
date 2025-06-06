@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace WebAPI.Controllers
 {
-    [Route("api/v{version:apiVersion}/user")]
+    [Route("api/v{version:apiVersion}/users")]
     [ApiVersion("1.0")]
     [ApiController]
     public class UserController : ControllerBase
@@ -32,6 +32,7 @@ namespace WebAPI.Controllers
                     return BadRequest("Invalid user data.");
                 }
 
+                _logger.Debug("Creating user with request data: {Request}", request);
                 var userProfile = await _userService.CreateUserAsync(request);
                 _logger.Info("User created successfully.", userProfile);
 

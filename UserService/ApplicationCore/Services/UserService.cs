@@ -23,8 +23,11 @@ namespace ApplicationCore.Services
         {
             try
             {
+                _logger.Debug("Creating user with request data: {Request}", request);
                 var userUpdated = _mapper.Map<CreateUserRequest, User>(request);
+                _logger.Debug("Mapped CreateUserRequest to User: {User}", userUpdated);
                 var createdUserProfile = await _userRepository.CreateUserAsync(userUpdated);
+                _logger.Debug("User created in repository: {User}", createdUserProfile);
                 if (createdUserProfile == null)
                 {
                     _logger.Error("Failed to create user profile.");
@@ -32,6 +35,7 @@ namespace ApplicationCore.Services
                 }
 
                 _logger.Info("User profile created successfully.", createdUserProfile);
+                _logger.Debug("Mapping User to UserProfile for response: {User}", _mapper.Map<User, UserProfile>(createdUserProfile));
                 return _mapper.Map<User, UserProfile>(createdUserProfile);
             }
             catch (HandleException hex)
