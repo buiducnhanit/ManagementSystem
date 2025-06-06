@@ -6,6 +6,8 @@ using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Web;
 
 namespace ApplicationCore.Services
@@ -19,9 +21,10 @@ namespace ApplicationCore.Services
         private readonly IConfiguration _configuration;
         private readonly ISendMailService _sendMailService;
         private readonly IRefreshTokenService _refreshTokenService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthService> logger,
-            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService)
+            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -30,6 +33,7 @@ namespace ApplicationCore.Services
             _configuration = configuration;
             _sendMailService = sendMailService;
             _refreshTokenService = refreshTokenService;
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<string?> RegisterAsync(RegisterDto dto)
@@ -45,7 +49,12 @@ namespace ApplicationCore.Services
                 var user = new ApplicationUser
                 {
                     UserName = dto.UserName,
-                    Email = dto.Email
+                    Email = dto.Email,
+                    FirstName = dto.FirstName,
+                    LastName = dto.LastName,
+                    Address = dto.Address,
+                    PhoneNumber = dto.PhoneNumber,
+                    DateOfBirth = dto.DateOfBirth,
                 };
 
                 var result = await _userManager.CreateAsync(user, dto.Password);
@@ -57,6 +66,10 @@ namespace ApplicationCore.Services
                     throw new HandleException("User registration failed.", 400, errors);
                 }
 
+                await _userManager.AddToRoleAsync(user, "User");
+                await CallUserServiceToCreateProfile(user);
+
+                // Send confirmation email
                 var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
                 var confirmationLink = $"{_configuration["Frontend:BaseUrl"]}/verify-email?userId={user.Id}&token={Uri.EscapeDataString(emailToken)}";
@@ -79,6 +92,42 @@ namespace ApplicationCore.Services
             {
                 _logger.Error($"Unexpected error in RegisterAsync for {dto.Email}", ex);
                 throw new HandleException("An unexpected error occurred during registration.", 500);
+            }
+        }
+
+        private async Task CallUserServiceToCreateProfile(ApplicationUser user)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.BaseAddress = new Uri(_configuration["UserService:BaseUrl"]!);
+
+                var internalToken = _jwtTokenGenerator.GenerateInternalServiceToken();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
+
+                var createUserRequest = new
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    AvatarUrl = user.AvatarUrl,
+                    Address = user.Address,
+                    PhoneNumber = user.PhoneNumber,
+                    DateOfBirth = user.DateOfBirth,
+                };
+
+                var response = await client.PostAsJsonAsync("api/v1/users", createUserRequest);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.Error("Failed to create user profile in user service.");
+                    throw new HandleException("Failed to create user profile in user service.", (int)response.StatusCode);
+                }
+                _logger.Info("User profile created successfully for user {UserId} ({Email}).", user.Id, user.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error calling user service to create profile for user {UserId} ({Email}).", ex, user.Id, user.Email);
+                throw new HandleException("An unexpected error occurred while creating user profile.", 500);
             }
         }
 

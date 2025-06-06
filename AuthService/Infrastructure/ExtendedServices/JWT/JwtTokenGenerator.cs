@@ -62,5 +62,41 @@ namespace Infrastructure.ExtendedServices.JWT
                 return Convert.ToBase64String(randomNumber);
             }
         }
+
+        public string GenerateInternalServiceToken()
+        {
+            var secretKey = _config["Jwt:Key"];
+            var issuer = _config["Jwt:Issuer"];
+            var audience = _config["Jwt:Audience"];
+
+            if (string.IsNullOrEmpty(secretKey) || string.IsNullOrEmpty(issuer) || string.IsNullOrEmpty(audience))
+            {
+                throw new InvalidOperationException("JWT configuration is not properly set in appsettings.json");
+            }
+
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claims = new List<Claim>
+            {
+                new Claim("is_internal_service", "true"),
+                new Claim(ClaimTypes.Role, "AuthServiceInternal"),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            };
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(5),
+                Issuer = issuer,
+                Audience = audience,
+                SigningCredentials = credentials
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            return tokenHandler.WriteToken(token);
+        }
     }
 }

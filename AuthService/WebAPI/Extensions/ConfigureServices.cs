@@ -1,7 +1,4 @@
-﻿using Asp.Versioning.ApiExplorer;
-using ManagementSystem.Shared.Common.Logging;
-
-namespace WebAPI.Extensions
+﻿namespace WebAPI.Extensions
 {
     public static class ConfigureServices
     {
@@ -10,6 +7,7 @@ namespace WebAPI.Extensions
             services.AddAuthorization();
             services.AddControllers();
             services.AddSwaggerExtension();
+            services.AddHttpClient();
 
             return services;
         }

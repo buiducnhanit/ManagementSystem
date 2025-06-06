@@ -6,5 +6,6 @@ namespace Infrastructure.JWT
     {
         Task<string> GenerateTokenAsync(ApplicationUser user);
         string GenerateFreshTokenString();
+        string GenerateInternalServiceToken();
     }
 }
