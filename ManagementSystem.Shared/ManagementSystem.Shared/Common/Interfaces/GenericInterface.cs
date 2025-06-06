@@ -4,14 +4,15 @@ using System.Linq.Expressions;
 
 namespace ManagementSystem.Shared.Common.Interfaces
 {
-    public class GenericInterface<TEntity, TKey> : IGenericInterface<TEntity, TKey>
+    public class GenericInterface<TEntity, TKey, TDbContext> : IGenericInterface<TEntity, TKey, TDbContext>
         where TEntity : BaseEntity<TKey>
         where TKey : IEquatable<TKey>
+        where TDbContext : DbContext
     {
-        protected readonly DbContext _context;
+        protected readonly TDbContext _context;
         protected readonly DbSet<TEntity> _dbSet;
 
-        public GenericInterface(DbContext context)
+        public GenericInterface(TDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _dbSet = _context.Set<TEntity>();

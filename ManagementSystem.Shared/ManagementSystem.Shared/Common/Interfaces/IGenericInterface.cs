@@ -1,11 +1,13 @@
 ﻿using ManagementSystem.Shared.Common.Entities;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace ManagementSystem.Shared.Common.Interfaces
 {
-    public interface IGenericInterface<TEntity, TKey>
+    public interface IGenericInterface<TEntity, TKey, TDbContext>
         where TEntity : IBaseEntity<TKey>
         where TKey : IEquatable<TKey>
+        where TDbContext : DbContext
     {
         Task<IEnumerable<TEntity>> GetAllAsync();
         Task<TEntity?> GetByIdAsync(TKey id);

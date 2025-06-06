@@ -1,4 +1,5 @@
-﻿using ManagementSystem.Shared.Common.Logging;
+﻿using ManagementSystem.Shared.Common.Interfaces;
+using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,7 @@ namespace ManagementSystem.Shared.Common.DependencyInjection
 
             // Add Serilog for logging
             services.AddScoped(typeof(ICustomLogger<>), typeof(SerilogCustomLogger<>));
+            services.AddScoped(typeof(IGenericInterface<,,>), typeof(GenericInterface<,,>));
 
             return services;
         }
