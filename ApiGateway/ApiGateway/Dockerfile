@@ -12,7 +12,9 @@ RUN dotnet publish "ApiGateway.csproj" -c Release -o /app/publish /p:UseAppHost=
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=publish /app/publish .	
+
+COPY ["ApiGateway/ApiGateway/ocelot.json", "./"]
 
 EXPOSE 80
 EXPOSE 443

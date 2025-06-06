@@ -71,6 +71,28 @@
     }
   ],
   "GlobalConfiguration": {
-    "BaseUrl": "https://localhost:7001"
-  }
+    "BaseUrl": "http://localhost:7000"
+  },
+  "SwaggerEndPoints": [
+    {
+      "Key": "auth",
+      "Config": [
+        {
+          "Name": "Auth Service",
+          "Version": "v1",
+          "Url": "http://authservice/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "user",
+      "Config": [
+        {
+          "Name": "User Service",
+          "Version": "v1",
+          "Url": "http://userservice/swagger/v1/swagger.json"
+        }
+      ]
+    }
+  ]
 }
