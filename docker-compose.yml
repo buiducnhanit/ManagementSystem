@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # 1. SQL Server Database Container
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ""
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - microservice_network
+
+  # 2. Auth Service Container
+  authservice:
+    build:
+      context: . 
+      dockerfile: AuthService/WebAPI/Dockerfile 
+    container_name: authservice
+    environment:
+      "Jwt:Key": ""
+      "Jwt:Issuer": "http://authservice:80"
+      "Jwt:Audience": "http://userservice:80"
+      "ASPNETCORE_ENVIRONMENT": "Development" 
+    ports:
+      - "5000:80"
+    depends_on:
+      - sqlserver
+    networks:
+      - microservice_network
+
+  # 3. User Service Container
+  userservice:
+    build:
+      context: .
+      dockerfile: UserService/WebAPI/Dockerfile
+    container_name: userservice
+    environment:
+      "Jwt:Key": ""
+      "Jwt:Issuer": "http://authservice:80"
+      "Jwt:Audience": "http://userservice:80"
+      "ASPNETCORE_ENVIRONMENT": "Development" 
+    ports:
+      - "5001:80"
+    depends_on:
+      - sqlserver
+    networks:
+      - microservice_network
+      
+  # 4. API Gateway Container
+  apigateway:
+    build:
+      context: .
+      dockerfile: ApiGateway/ApiGateway/Dockerfile
+    container_name: apigateway
+    environment:
+      "Jwt:Key": ""
+      "Jwt:Issuer": "http://authservice:80"
+      "Jwt:Audience": "http://userservice:80"
+      "ASPNETCORE_ENVIRONMENT": "Development" 
+    ports:
+      - "7000:80"  
+      - "7001:443" 
+    depends_on:
+      - authservice
+      - userservice
+    networks:
+      - microservice_network
+
+networks:
+  microservice_network:
+    driver: bridge 
+
+volumes:
+  sqlserver_data: {}
