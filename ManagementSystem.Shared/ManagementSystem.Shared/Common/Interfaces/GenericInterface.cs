@@ -37,6 +37,7 @@ namespace ManagementSystem.Shared.Common.Interfaces
         {
             if (entity == null) throw new ArgumentNullException(nameof(entity));
             await _dbSet.AddAsync(entity);
+            await _context.SaveChangesAsync();
         }
 
         public virtual async Task UpdateAsync(TEntity entity)
