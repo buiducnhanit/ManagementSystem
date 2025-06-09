@@ -6,14 +6,16 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.UseUrls("http://*:80");
+//builder.WebHost.UseUrls("http://*:80");
 
 // Add services to the container.
 builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
 
 builder.Configuration.AddEnvironmentVariables();
+
 // Add Ocelot services
 builder.Services.AddOcelot(builder.Configuration);
+//builder.Services.AddSwaggerForOcelot(builder.Configuration);
 
 // Configure JWT Authentication for Ocelot
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -42,8 +44,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddSwaggerForOcelot(builder.Configuration);
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -59,10 +59,10 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseSwaggerForOcelotUI(options =>
-{
-    options.PathToSwaggerGenerator = "/swagger/docs";
-});
+//app.UseSwaggerForOcelotUI(options =>
+//{
+//    options.PathToSwaggerGenerator = "/swagger/docs";
+//});
 await app.UseOcelot();
 
 app.Run();
