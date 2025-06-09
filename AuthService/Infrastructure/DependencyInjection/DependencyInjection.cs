@@ -31,6 +31,7 @@ namespace Infrastructure.DependencyInjection
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+            services.AddScoped<IRoleService, RoleService>();
 
             // Configure email services
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
