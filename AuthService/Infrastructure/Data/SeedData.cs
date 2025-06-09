@@ -34,6 +34,7 @@ namespace Infrastructure.Data
                 await SeedRoles(roleManager, logger);
 
                 await SeedAdminUser(userManager, roleManager, logger);
+                await SeedManagerUser(userManager, roleManager, logger);
 
                 logger.LogInformation("Database seeding completed.");
             }
@@ -112,6 +113,55 @@ namespace Infrastructure.Data
             else
             {
                 logger.LogInformation("Default Admin user already exists.");
+            }
+        }
+
+        private static async Task SeedManagerUser(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ILogger<SeedData> logger)
+        {
+            string managerEmail = "manager@fpt.com";
+            string managerPassword = "Manager@123";
+            string managerRoleName = "Manager";
+
+            if (await userManager.FindByEmailAsync(managerEmail) == null)
+            {
+                logger.LogInformation("Creating default Manager user...");
+                var managerUser = new ApplicationUser
+                {
+                    UserName = managerEmail,
+                    Email = managerEmail,
+                    EmailConfirmed = true,
+                };
+
+                var result = await userManager.CreateAsync(managerUser, managerPassword);
+                if (result.Succeeded)
+                {
+                    logger.LogInformation("Default Manager user created successfully.");
+
+                    if (await roleManager.RoleExistsAsync(managerRoleName))
+                    {
+                        var roleResult = await userManager.AddToRoleAsync(managerUser, managerRoleName);
+                        if (roleResult.Succeeded)
+                        {
+                            logger.LogInformation("Default Manager user assigned to Manager role successfully.");
+                        }
+                        else
+                        {
+                            logger.LogError("Error assigning Manager role to user: {Errors}", string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+                        }
+                    }
+                    else
+                    {
+                        logger.LogWarning($"Role '{managerRoleName}' does not exist. Cannot assign to user.");
+                    }
+                }
+                else
+                {
+                    logger.LogError("Error creating default Manager user: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+                }
+            }
+            else
+            {
+                logger.LogInformation("Default Manager user already exists.");
             }
         }
     }

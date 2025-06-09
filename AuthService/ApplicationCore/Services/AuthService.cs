@@ -4,8 +4,11 @@ using ApplicationCore.Interfaces;
 using Infrastructure.JWT;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
+using ManagementSystem.Shared.Contracts;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Web;
@@ -22,9 +25,10 @@ namespace ApplicationCore.Services
         private readonly ISendMailService _sendMailService;
         private readonly IRefreshTokenService _refreshTokenService;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly PasswordOptions _passwordOptions;
 
         public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthService> logger,
-            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory)
+            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory, IOptions<IdentityOptions> passwordOptions)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -34,10 +38,12 @@ namespace ApplicationCore.Services
             _sendMailService = sendMailService;
             _refreshTokenService = refreshTokenService;
             _httpClientFactory = httpClientFactory;
+            _passwordOptions = passwordOptions.Value.Password;
         }
 
         public async Task<string?> RegisterAsync(RegisterDto dto)
         {
+            ApplicationUser? user = null;
             try
             {
                 var existingUser = await _userManager.FindByNameAsync(dto.UserName) ?? await _userManager.FindByEmailAsync(dto.Email);
@@ -46,15 +52,11 @@ namespace ApplicationCore.Services
                     throw new HandleException("Email is already registered.", 400);
                 }
 
-                var user = new ApplicationUser
+                user = new ApplicationUser
                 {
                     UserName = dto.UserName,
                     Email = dto.Email,
-                    FirstName = dto.FirstName,
-                    LastName = dto.LastName,
-                    Address = dto.Address,
                     PhoneNumber = dto.PhoneNumber,
-                    DateOfBirth = dto.DateOfBirth,
                 };
 
                 var result = await _userManager.CreateAsync(user, dto.Password);
@@ -62,72 +64,89 @@ namespace ApplicationCore.Services
                 {
                     var errors = result.Errors.Select(e => e.Description).ToList();
                     _logger.Warn("Failed to create user. Reasons: {@Reasons}", errors);
-
                     throw new HandleException("User registration failed.", 400, errors);
                 }
 
                 await _userManager.AddToRoleAsync(user, "User");
-                await CallUserServiceToCreateProfile(user);
+                _logger.Info("User {Email} created in AuthService DB.", user.Email);
+                await CallUserServiceToCreateProfile(user, dto);
 
-                // Send confirmation email
                 var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-
                 var confirmationLink = $"{_configuration["Frontend:BaseUrl"]}/verify-email?userId={user.Id}&token={Uri.EscapeDataString(emailToken)}";
-
                 var subject = "Confirm your email";
                 var body = $"<p>Hello {user.UserName},</p>" +
                            $"<p>Click <a href='{confirmationLink}'>here</a> to confirm your email address.</p>";
-
                 await _sendMailService.SendEmailAsync(user.Email!, subject, body, isHtml: true);
-
+                _logger.Info("Confirm account for user ID: {ID} with token: {token}", user.Id, emailToken);
                 _logger.Info("User {Email} registered successfully and confirmation email sent.", user.Email);
 
                 return null;
             }
-            catch (HandleException)
+            catch (HandleException hex)
             {
-                throw;
+                if (user != null && await _userManager.FindByEmailAsync(user.Email ?? string.Empty) != null)
+                {
+                    await _userManager.DeleteAsync(user);
+                    _logger.Warn("User {Email} created in AuthService was rolled back due to subsequent error.", user.Email);
+                }
+                throw hex;
             }
             catch (Exception ex)
             {
+                if (user != null && await _userManager.FindByNameAsync(user.UserName ?? string.Empty) != null)
+                {
+                    await _userManager.DeleteAsync(user);
+                    _logger.Warn("User {Email} created in AuthService was rolled back due to unexpected error.", user.Email);
+                }
                 _logger.Error($"Unexpected error in RegisterAsync for {dto.Email}", ex);
                 throw new HandleException("An unexpected error occurred during registration.", 500);
             }
         }
 
-        private async Task CallUserServiceToCreateProfile(ApplicationUser user)
+        private async Task CallUserServiceToCreateProfile(ApplicationUser user, RegisterDto dto)
         {
+            var client = _httpClientFactory.CreateClient();
+            client.BaseAddress = new Uri(_configuration["UserService:BaseUrl"]!);
+            _logger.Info("URL for User Service: {Url}", client.BaseAddress);
+
+            var internalToken = _jwtTokenGenerator.GenerateInternalServiceToken();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
+
+            var createUserRequest = new CreateUserEvent
+            {
+                Id = user.Id,
+                UserName = user.UserName ?? string.Empty,
+                Email = user.Email!,
+                FirstName = dto.FirstName ?? string.Empty,
+                LastName = dto.LastName ?? string.Empty,
+                PhoneNumber = dto.PhoneNumber ?? string.Empty,
+                DateOfBirth = dto.DateOfBirth,
+                Address = dto.Address ?? string.Empty,
+            };
+
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                client.BaseAddress = new Uri(_configuration["UserService:BaseUrl"]!);
-
-                var internalToken = _jwtTokenGenerator.GenerateInternalServiceToken();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
-
-                var createUserRequest = new
-                {
-                    Id = user.Id,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    AvatarUrl = user.AvatarUrl,
-                    Address = user.Address,
-                    PhoneNumber = user.PhoneNumber,
-                    DateOfBirth = user.DateOfBirth,
-                };
-
+                var url = $"{client.BaseAddress}api/v1/users";
+                _logger.Info("Calling User Service to create profile for user {UserId} ({Email}) at {Url}", user.Id, user.Email, url);
                 var response = await client.PostAsJsonAsync("api/v1/users", createUserRequest);
+
                 if (!response.IsSuccessStatusCode)
                 {
+                    var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.Error("Failed to create user profile in user service.");
-                    throw new HandleException("Failed to create user profile in user service.", (int)response.StatusCode);
+                    throw new HttpRequestException($"UserService responded with status {response.StatusCode}: {errorContent}");
                 }
-                _logger.Info("User profile created successfully for user {UserId} ({Email}).", user.Id, user.Email);
+                _logger.Info("User profile created successfully for user {UserId} ({Email}) in UserService.", user.Id, user.Email);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.Error("Network or HTTP error calling User Service");
+                throw;
             }
             catch (Exception ex)
             {
                 _logger.Error("Error calling user service to create profile for user {UserId} ({Email}).", ex, user.Id, user.Email);
-                throw new HandleException("An unexpected error occurred while creating user profile.", 500);
+                throw;
             }
         }
 
@@ -337,6 +356,7 @@ namespace ApplicationCore.Services
 
                 // Send email to reset password
                 var resetPasswordLink = $"{_configuration["FrontendBaseUrl"]}/reset-password?userId={user.Id}&token={HttpUtility.UrlEncode(token)}";
+                _logger.Info("Send email to reset password for user {ID} with token: {token}", user.Id, token);
                 await _sendMailService.SendEmailAsync(request.Email, "Reset password", $"Click the link to reset your password: <a href='{resetPasswordLink}'>Reset Password</a>");
             }
             catch (Exception ex)
@@ -430,6 +450,203 @@ namespace ApplicationCore.Services
             {
                 _logger.Error("Unexpected error in ChangePasswordAsync for {userId}", ex, request.UserId);
                 throw new HandleException("An unexpected error occurred during password change.", 500);
+            }
+        }
+
+        public async Task UpdateUserInfoAsync(UpdateAuthEvent updateAuth)
+        {
+            bool userChanged = false;
+            var user = await _userManager.FindByIdAsync(updateAuth.Id.ToString());
+
+            if (!string.IsNullOrEmpty(updateAuth.Email) && user.Email != updateAuth.Email)
+            {
+                _logger.Info("Attempting to update Email for user {UserId} from {OldEmail} to {NewEmail}.", user.Id, user.Email, updateAuth.Email);
+                var setUsernameResult = await _userManager.SetUserNameAsync(user, updateAuth.Email);
+                if (!setUsernameResult.Succeeded)
+                {
+                    var errors = string.Join(", ", setUsernameResult.Errors.Select(e => e.Description));
+                    throw new HandleException($"Failed to set UserName: {errors}", 400, new List<string> { errors });
+                }
+
+                var setEmailResult = await _userManager.SetEmailAsync(user, updateAuth.Email);
+                if (!setEmailResult.Succeeded)
+                {
+                    _logger.Error("Failed to update Email for user.");
+                    throw new HandleException($"Failed to set Email: {string.Join(", ", setEmailResult.Errors.Select(e => e.Description))}", 400, new List<string> { "Failed to update email." });
+                }
+                user.EmailConfirmed = false;
+                userChanged = true;
+            }
+
+            if (!string.IsNullOrEmpty(updateAuth.PhoneNumber) && user.PhoneNumber != updateAuth.PhoneNumber)
+            {
+                _logger.Info("Attempting to update Phone Number for user {UserId} from {OldPhone} to {NewPhone}.", user.Id, user.PhoneNumber, updateAuth.PhoneNumber);
+                var setPhoneNumberResult = await _userManager.SetPhoneNumberAsync(user, updateAuth.PhoneNumber);
+                if (!setPhoneNumberResult.Succeeded)
+                {
+                    var errors = string.Join(", ", setPhoneNumberResult.Errors.Select(e => e.Description));
+                    throw new HandleException($"Failed to set PhoneNumber: {errors}", 400, new List<string> { errors });
+                }
+                user.PhoneNumberConfirmed = false;
+                userChanged = true;
+            }
+
+            if (userChanged)
+            {
+                await _userManager.UpdateSecurityStampAsync(user);
+                var updateResult = await _userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                {
+                    var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
+                    _logger.Error("Failed to save user changes and SecurityStamp for user.");
+                    throw new HandleException($"Failed to save user changes: {errors}", 400, new List<string> { "Failed to update user information." });
+                }
+                _logger.Info("User {UserId} SecurityStamp updated and changes saved.", user.Id);
+            }
+            else
+            {
+                _logger.Info("No relevant email or phone number changes for user {UserId}.", user.Id);
+            }
+        }
+
+        public async Task<ApplicationUser> CreateUserByAdminAsync(CreateUserByAdminRequest request)
+        {
+            var existingUser = await _userManager.FindByEmailAsync(request.Email);
+            if (existingUser != null)
+            {
+                _logger.Warn("User with Email {Email} already exists.", request.Email);
+                throw new Exception("Email is already exists.");
+            }
+
+            var randomPassword = GenerateRandomPassword(_passwordOptions);
+            _logger.Info("Generated random password for new user {Email}.", request.Email);
+
+            var newUser = new ApplicationUser
+            {
+                UserName = request.Email,
+                Email = request.Email,
+                //EmailConfirmed = true,
+                PhoneNumber = request.PhoneNumber,
+                PhoneNumberConfirmed = !string.IsNullOrEmpty(request.PhoneNumber)
+            };
+
+            var createResult = await _userManager.CreateAsync(newUser, randomPassword);
+            if (!createResult.Succeeded)
+            {
+                var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                _logger.Error("Failed to create user identity in AuthService for Email {Email}", null, request.Email);
+                throw new Exception($"Failed to create user identity: {errors}");
+            }
+
+            var assignRoleResult = await _userManager.AddToRoleAsync(newUser, "User");
+            if (!assignRoleResult.Succeeded)
+            {
+                _logger.Error("Failed to assign 'User' role to new user {UserId} with Email {Email}: {Errors}. Rolling back user identity creation.");
+                await _userManager.DeleteAsync(newUser);
+                throw new HandleException("Failed to assign default role, user identity creation rolled back.", (int)HttpStatusCode.InternalServerError);
+            }
+            _logger.Info("New user identity {Email} created in AuthService and assigned 'User' role. User ID: {UserId}.", newUser.Email, newUser.Id.ToString());
+
+            await CallToUserServiceToCreateAccount(newUser);
+
+            try
+            {
+                var emailSubject = "Tài khoản của bạn đã được tạo!";
+                var emailBody = $"Xin chào {request.Email},\n\n";
+                emailBody += $"Tài khoản của bạn đã được tạo bởi quản trị viên.\n";
+                emailBody += $"Email đăng nhập của bạn là: {request.Email}\n";
+                emailBody += $"Mật khẩu tạm thời của bạn là: <strong>{randomPassword}</strong>\n\n";
+                emailBody += "Vui lòng đăng nhập và thay đổi mật khẩu của bạn càng sớm càng tốt.\n\n";
+                emailBody += "Trân trọng,\nĐội ngũ hỗ trợ của chúng tôi";
+
+                await _sendMailService.SendEmailAsync(request.Email, emailSubject, emailBody);
+                _logger.Info("Random password sent to user {Email}.", request.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to send random password email to user {Email} after successful creation. This requires manual intervention.", ex, request.Email);
+                throw new HandleException("Failed to send email with random password after user creation.", (int)HttpStatusCode.InternalServerError);
+            }
+
+            return newUser;
+        }
+
+        private string GenerateRandomPassword(PasswordOptions opts)
+        {
+            string[] randomChars = new[]
+            {
+                "ABCDEFGHJKLMNOPQRSTUVWXYZ",
+                "abcdefghijkmnopqrstuvwxyz",
+                "0123456789",
+                "!@$?_-"
+            };
+
+            var rand = new Random();
+            var chars = new List<char>();
+
+            if (opts.RequireUppercase)
+                chars.Insert(rand.Next(0, chars.Count), randomChars[0][rand.Next(0, randomChars[0].Length)]);
+
+            if (opts.RequireLowercase)
+                chars.Insert(rand.Next(0, chars.Count), randomChars[1][rand.Next(0, randomChars[1].Length)]);
+
+            if (opts.RequireDigit)
+                chars.Insert(rand.Next(0, chars.Count), randomChars[2][rand.Next(0, randomChars[2].Length)]);
+
+            if (opts.RequireNonAlphanumeric)
+                chars.Insert(rand.Next(0, chars.Count), randomChars[3][rand.Next(0, randomChars[3].Length)]);
+
+            for (int i = chars.Count; i < opts.RequiredLength || chars.Distinct().Count() < opts.RequiredUniqueChars; i++)
+            {
+                string rcs = randomChars[rand.Next(0, randomChars.Length)];
+                chars.Insert(rand.Next(0, chars.Count), rcs[rand.Next(0, rcs.Length)]);
+            }
+
+            return new string(chars.ToArray());
+        }
+
+        public async Task CallToUserServiceToCreateAccount(ApplicationUser newUser)
+        {
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient();
+                var userServiceBaseUrl = _configuration["UserService:BaseUrl"] ?? throw new InvalidOperationException("UserService:BaseUrl is not configured.");
+                httpClient.BaseAddress = new Uri(userServiceBaseUrl);
+
+                //var internalToken = _jwtInternalService.GenerateInternalServiceToken();
+                //httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
+
+                var profileRequest = new CreateUserProfileRequest
+                {
+                    UserId = newUser.Id,
+                    Email = newUser.Email!,
+                    PhoneNumber = newUser.PhoneNumber!
+                };
+
+                var response = await httpClient.PostAsJsonAsync("api/v1/users", profileRequest);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.Error("Failed to create user profile in UserService for UserId: {UserId}. Status: {StatusCode}, Content: {ErrorContent}. Rolling back user identity.");
+                    await _userManager.DeleteAsync(newUser);
+                    throw new HandleException($"Failed to create user profile in UserService: {errorContent}. User identity rolled back.", (int)response.StatusCode);
+                }
+
+                _logger.Info("User profile created successfully in UserService for UserId: {UserId}.", newUser.Id);
+
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.Error("HTTP request failed when trying to create user profile in UserService for UserId: {UserId}. Rolling back user identity.", ex, newUser.Id);
+                await _userManager.DeleteAsync(newUser);
+                throw new HandleException($"Network or communication error with UserService: {ex.Message}. User identity rolled back.", (int)HttpStatusCode.InternalServerError);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("An unexpected error occurred while calling UserService for UserId: {UserId}. Rolling back user identity.", ex, newUser.Id);
+                await _userManager.DeleteAsync(newUser);
+                throw new HandleException($"An unexpected error occurred during user profile creation. User identity rolled back.", (int)HttpStatusCode.InternalServerError);
             }
         }
     }

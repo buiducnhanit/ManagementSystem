@@ -90,7 +90,8 @@ namespace ApplicationCore.Services
 
             var timeSinceLastUsed = DateTime.UtcNow - existingToken.LastUsed;
             var _idleSessionTimeoutHours = Convert.ToInt32(_configuration["Session:IdleSessionTimeoutInHours"]!);
-            if (timeSinceLastUsed.TotalMinutes >= _idleSessionTimeoutHours)
+            var idleSessionTimeoutMinutes = _idleSessionTimeoutHours * 60;
+            if (timeSinceLastUsed.TotalMinutes >= idleSessionTimeoutMinutes)
             {
                 _logger.Warn("Refresh token for user {userId} has been inactive for too long. Last used: {LastUsed}, now: {DateTime}", userId, existingToken.LastUsed.ToString(), DateTime.UtcNow);
                 await RevokeAllTokensForUserAsync(userId, $"Session idle timeout exceeded ({_idleSessionTimeoutHours} hours)", clientIp);

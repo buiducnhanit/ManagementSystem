@@ -4,6 +4,7 @@ using Asp.Versioning;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;
+using ManagementSystem.Shared.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -184,7 +185,7 @@ namespace WebAPI.Controllers
                 var result = await _authService.ResetPasswordAsyns(dto);
                 _logger.Info("Reset password successfully for User: {Email}", user.Email);
 
-                return Ok(ApiResponse<string>.SuccessResponse("Reset password successfully. Confirm your email to set new password."));
+                return Ok(ApiResponse<string>.SuccessResponse("Reset password successfully."));
             }
             catch (HandleException ex)
             {
@@ -252,6 +253,38 @@ namespace WebAPI.Controllers
                 _logger.Error("Unexpected error in ChangePassword for user ID {userId}", ex, request.UserId);
                 return BadRequest(ApiResponse<string>.FailureResponse("Failed to change password.", 400, ex.Errors));
             }
+        }
+
+        [HttpPut("user-info")]
+        public async Task<IActionResult> UpdateUserInfo([FromBody] UpdateAuthEvent command)
+        {
+            _logger.Info("Received internal user info update request for user ID: {UserId}", command.Id);
+
+            var user = await _authService.GetUserByIdAsync(command.Id.ToString());
+            if (user == null)
+            {
+                _logger.Info("User with ID {UserId} not found in AuthService for internal update.", command.Id);
+                return NotFound($"User with ID: {command.Id} not found in AuthService.");
+            }
+
+            await _authService.UpdateUserInfoAsync(command);
+            _logger.Info("User info updated successfully for user ID: {UserId}", command.Id);
+            return Ok(ApiResponse<string>.SuccessResponse("User info updated successfully."));
+        }
+
+        [HttpPost("create-user")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateUserByAdmin([FromBody] CreateUserByAdminRequest request)
+        {
+            _logger.Info("Admin ({AdminEmail}) attempting to create new user with Email: {Email}", User.Identity?.Name, request.Email);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var newUser = await _authService.CreateUserByAdminAsync(request);
+            return Ok(ApiResponse<string>.SuccessResponse("User created successfully user for email: {Email}. Password sent to user email.", newUser.Email!));
         }
     }
 }

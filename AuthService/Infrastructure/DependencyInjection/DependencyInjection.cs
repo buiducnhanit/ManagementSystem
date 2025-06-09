@@ -22,6 +22,8 @@ namespace Infrastructure.DependencyInjection
             // Configure Identity services
             services.AddIdentityService(configuration);
 
+            services.AddJWTAuthenticationScheme(configuration);
+
             // Add Serilog for logging
             services.AddScoped(typeof(ICustomLogger<>), typeof(SerilogCustomLogger<>));
 
