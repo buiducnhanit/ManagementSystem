@@ -1,6 +1,8 @@
 ﻿using Asp.Versioning.ApiExplorer;
+using Infrastructure.Data;
 using Infrastructure.DI;
 using ManagementSystem.Shared.Common.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebAPI.Extensions
 {
@@ -19,12 +21,18 @@ namespace WebAPI.Extensions
         {
             var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
 
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+                db.Database.Migrate();
+            }
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseCustomSwagger(provider);
             }
 
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
 
             app.UseAuthentication();
             app.UseAuthorization();

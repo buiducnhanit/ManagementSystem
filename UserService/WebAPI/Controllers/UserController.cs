@@ -3,7 +3,9 @@ using ApplicationCore.Interfaces;
 using Asp.Versioning;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace WebAPI.Controllers
 {
@@ -32,7 +34,6 @@ namespace WebAPI.Controllers
                     return BadRequest("Invalid user data.");
                 }
 
-                _logger.Debug("Creating user with request data: {Request}", request);
                 var userProfile = await _userService.CreateUserAsync(request);
                 _logger.Info("User created successfully.", userProfile);
 
@@ -68,11 +69,13 @@ namespace WebAPI.Controllers
         }
 
         [HttpPut]
+        [Authorize(Roles = "Admin, Manager")]
         public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] UpdateUserRequest request)
         {
             try
             {
                 var userProfile = await _userService.GetUserByIdAsync(userId);
+                //var userProfile = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (userProfile == null)
                 {
                     _logger.Warn("User with ID: {ID} not found for update.", userId);
@@ -92,6 +95,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
             try
@@ -119,6 +123,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> GetAllUsers()
         {
             try

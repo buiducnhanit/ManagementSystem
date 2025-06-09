@@ -26,8 +26,6 @@ namespace Infrastructure.Repositories
                     _logger.Error("CreateUser request is null.");
                     throw new ArgumentNullException(nameof(user), "User data cannot be null.");
                 }
-
-                user.Id = Guid.NewGuid();
                 await _generic.AddAsync(user);
 
                 return user;

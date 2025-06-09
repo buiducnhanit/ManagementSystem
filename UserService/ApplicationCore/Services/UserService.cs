@@ -3,6 +3,9 @@ using ApplicationCore.Entities;
 using ApplicationCore.Interfaces;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
+using ManagementSystem.Shared.Contracts;
+using Microsoft.Extensions.Configuration;
+using System.Net.Http.Json;
 
 namespace ApplicationCore.Services
 {
@@ -11,23 +14,25 @@ namespace ApplicationCore.Services
         private readonly IUserRepository _userRepository;
         private readonly ICustomLogger<UserService> _logger;
         private readonly IMapperService _mapper;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
-        public UserService(IUserRepository userRepository, ICustomLogger<UserService> logger, IMapperService mapper)
+        public UserService(IUserRepository userRepository, ICustomLogger<UserService> logger, IMapperService mapper, IHttpClientFactory httpClientFactory,
+            IConfiguration configuration)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
         public async Task<UserProfile> CreateUserAsync(CreateUserRequest request)
         {
             try
             {
-                _logger.Debug("Creating user with request data: {Request}", request);
                 var userUpdated = _mapper.Map<CreateUserRequest, User>(request);
-                _logger.Debug("Mapped CreateUserRequest to User: {User}", userUpdated);
                 var createdUserProfile = await _userRepository.CreateUserAsync(userUpdated);
-                _logger.Debug("User created in repository: {User}", createdUserProfile);
                 if (createdUserProfile == null)
                 {
                     _logger.Error("Failed to create user profile.");
@@ -35,7 +40,6 @@ namespace ApplicationCore.Services
                 }
 
                 _logger.Info("User profile created successfully.", createdUserProfile);
-                _logger.Debug("Mapping User to UserProfile for response: {User}", _mapper.Map<User, UserProfile>(createdUserProfile));
                 return _mapper.Map<User, UserProfile>(createdUserProfile);
             }
             catch (HandleException hex)
@@ -79,9 +83,25 @@ namespace ApplicationCore.Services
                     throw new KeyNotFoundException($"User with ID: {id} not found.");
                 }
 
+                var oldEmail = existingUser.Email;
+                var oldPhoneNumber = existingUser.PhoneNumber;
+
                 var profileUserUpdated = _mapper.Map<UpdateUserRequest, User>(request);
+                profileUserUpdated.Id = id;
                 var updatedUser = await _userRepository.UpdateUserAsync(profileUserUpdated);
                 _logger.Info("User profile updated successfully.", updatedUser);
+
+                bool isEmailChanged = oldEmail != request.Email && !string.IsNullOrEmpty(request.Email);
+                bool isPhoneNumberChanged = oldPhoneNumber != request.PhoneNumber && !string.IsNullOrEmpty(request.PhoneNumber);
+                if (isEmailChanged || isPhoneNumberChanged)
+                {
+                    await SynchronizeAuthServiceUserInfoAsync(new UpdateAuthEvent
+                    {
+                        Id = id,
+                        Email = request.Email,
+                        PhoneNumber = request.PhoneNumber
+                    });
+                }
 
                 return _mapper.Map<User, UserProfile>(updatedUser);
             }
@@ -89,6 +109,47 @@ namespace ApplicationCore.Services
             {
                 _logger.Error("Error updating user.", ex);
                 throw;
+            }
+        }
+
+        private async Task SynchronizeAuthServiceUserInfoAsync(UpdateAuthEvent request)
+        {
+            _logger.Info("Attempting to synchronize user ID: {UserId} info with AuthService.", request.Id);
+
+            var client = _httpClientFactory.CreateClient();
+            client.BaseAddress = new Uri(_configuration["AuthService:BaseUrl"]!);
+
+            //var internalToken = _jwtInternalService.GenerateInternalServiceToken();
+            //client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
+
+            var updateAuthCommand = new UpdateAuthEvent
+            {
+                Id = request.Id,
+                Email = request.Email,
+                PhoneNumber = request.PhoneNumber,
+            };
+
+            try
+            {
+                var response = await client.PutAsJsonAsync("api/v1/auth/user-info", updateAuthCommand);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.Error("Failed to update user info in AuthService.");
+                    throw new HttpRequestException($"AuthService synchronization failed: {response.StatusCode} - {errorContent}");
+                }
+                _logger.Info("User info synchronized successfully with AuthService for user ID: {UserId}", request.Id);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.Error("Network or HTTP error calling AuthService.");
+                throw new Exception("Error during AuthService synchronization. Please contact support.", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("An unexpected error occurred during AuthService.");
+                throw new Exception("An unexpected error occurred during AuthService synchronization.", ex);
             }
         }
 

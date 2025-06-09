@@ -11,6 +11,8 @@ namespace Infrastructure.ExtendedServices.AutoMapper
             CreateMap<CreateUserRequest, User>();
 
             CreateMap<User, UserProfile>();
+
+            CreateMap<UpdateUserRequest, User>();
         }
     }
 }
