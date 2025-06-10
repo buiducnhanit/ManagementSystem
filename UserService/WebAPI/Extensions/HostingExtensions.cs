@@ -32,7 +32,7 @@ namespace WebAPI.Extensions
                 app.UseCustomSwagger(provider);
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseAuthentication();
             app.UseAuthorization();

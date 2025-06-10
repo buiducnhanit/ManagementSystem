@@ -1,4 +1,5 @@
 ﻿using ApplicationCore.DTOs;
+using ApplicationCore.Interfaces;
 using ApplicationCore.Services;
 using Asp.Versioning;
 using ManagementSystem.Shared.Common.Exceptions;
@@ -13,16 +14,16 @@ namespace WebAPI.Controllers
     [ApiController]
     public class RolesController : ControllerBase
     {
-        private readonly RoleService _roleService;
-        private readonly ICustomLogger<AuthController> _logger;
+        private readonly IRoleService _roleService;
+        private readonly ICustomLogger<RolesController> _logger;
 
-        public RolesController(RoleService roleService, ICustomLogger<AuthController> logger)
+        public RolesController(IRoleService roleService, ICustomLogger<RolesController> logger)
         {
             _roleService = roleService;
             _logger = logger;
         }
 
-        [HttpPost]
+        [HttpPost("add-roles")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -51,7 +52,7 @@ namespace WebAPI.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("remove-roles")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

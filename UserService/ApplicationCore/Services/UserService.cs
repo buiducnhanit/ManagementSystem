@@ -39,7 +39,7 @@ namespace ApplicationCore.Services
                     throw new Exception("Failed to create user profile.");
                 }
 
-                _logger.Info("User profile created successfully.", createdUserProfile);
+                _logger.Info("User profile created successfully.", null, null, createdUserProfile);
                 return _mapper.Map<User, UserProfile>(createdUserProfile);
             }
             catch (HandleException hex)
@@ -59,7 +59,7 @@ namespace ApplicationCore.Services
             try
             {
                 var user = await _userRepository.GetUserByIdAsync(id);
-                _logger.Info("User: {ID} retrieved successfully.", user.Id);
+                _logger.Info("User: {ID} retrieved successfully.", null, null, user.Id);
 
                 var userProfile = _mapper.Map<User, UserProfile>(user);
 
@@ -67,7 +67,7 @@ namespace ApplicationCore.Services
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error retrieving user with ID: {id}", ex);
+                _logger.Error("Error retrieving user with ID: {ID}", ex, null, null, id);
                 throw;
             }
         }
@@ -79,7 +79,7 @@ namespace ApplicationCore.Services
                 var existingUser = await _userRepository.GetUserByIdAsync(id);
                 if (existingUser == null)
                 {
-                    _logger.Warn($"User with ID: {id} not found for update.");
+                    _logger.Warn("User with ID: {ID} not found for update.", null, null, id);
                     throw new KeyNotFoundException($"User with ID: {id} not found.");
                 }
 
@@ -89,7 +89,7 @@ namespace ApplicationCore.Services
                 var profileUserUpdated = _mapper.Map<UpdateUserRequest, User>(request);
                 profileUserUpdated.Id = id;
                 var updatedUser = await _userRepository.UpdateUserAsync(profileUserUpdated);
-                _logger.Info("User profile updated successfully.", updatedUser);
+                _logger.Info("User profile updated successfully.", null, null, updatedUser);
 
                 bool isEmailChanged = oldEmail != request.Email && !string.IsNullOrEmpty(request.Email);
                 bool isPhoneNumberChanged = oldPhoneNumber != request.PhoneNumber && !string.IsNullOrEmpty(request.PhoneNumber);
@@ -114,7 +114,7 @@ namespace ApplicationCore.Services
 
         private async Task SynchronizeAuthServiceUserInfoAsync(UpdateAuthEvent request)
         {
-            _logger.Info("Attempting to synchronize user ID: {UserId} info with AuthService.", request.Id);
+            _logger.Info("Attempting to synchronize user ID: {UserId} info with AuthService.", null, null, request.Id);
 
             var client = _httpClientFactory.CreateClient();
             client.BaseAddress = new Uri(_configuration["AuthService:BaseUrl"]!);
@@ -139,7 +139,7 @@ namespace ApplicationCore.Services
                     _logger.Error("Failed to update user info in AuthService.");
                     throw new HttpRequestException($"AuthService synchronization failed: {response.StatusCode} - {errorContent}");
                 }
-                _logger.Info("User info synchronized successfully with AuthService for user ID: {UserId}", request.Id);
+                _logger.Info("User info synchronized successfully with AuthService for user ID: {UserId}", null, null, request.Id);
             }
             catch (HttpRequestException ex)
             {
@@ -161,7 +161,7 @@ namespace ApplicationCore.Services
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error deleting user with ID: {id}", ex);
+                _logger.Error("Error deleting user with ID: {ID}", ex, null, null, id);
                 throw;
             }
         }

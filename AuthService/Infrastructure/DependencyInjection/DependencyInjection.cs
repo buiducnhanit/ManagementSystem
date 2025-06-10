@@ -7,6 +7,7 @@ using Infrastructure.JWT;
 using ManagementSystem.Shared.Common.DependencyInjection;
 using ManagementSystem.Shared.Common.Logging;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -36,6 +37,11 @@ namespace Infrastructure.DependencyInjection
             // Configure email services
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
             services.AddTransient<ISendMailService, SendMailService>();
+
+            services.Configure<DataProtectionTokenProviderOptions>(options =>
+            {
+                options.TokenLifespan = TimeSpan.FromMinutes(5);
+            });
 
             return services;
         }

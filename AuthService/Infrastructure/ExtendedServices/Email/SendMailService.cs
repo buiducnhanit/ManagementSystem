@@ -28,8 +28,8 @@ namespace Infrastructure.ExtendedServices.Email
 
             try
             {
-                _logger.Info($"Api Key: {_emailSettings.ApiKey}, Secret Key: {_emailSettings.SecretKey}");
-                _logger.Info($"Sender Email: {_emailSettings.SenderEmail}, Sender Name: {_emailSettings.SenderName}");
+                _logger.Debug("Api Key: {ApiKey}, Secret Key: {SecretKey}", null, null, _emailSettings.ApiKey, _emailSettings.SecretKey);
+                _logger.Debug("Sender Email: {SenderEmail}, Sender Name: {SenderName}", null, null, _emailSettings.SenderEmail, _emailSettings.SenderName);
                 var client = new MailjetClient(_emailSettings.ApiKey, _emailSettings.SecretKey);
 
                 var request = new MailjetRequest
@@ -52,17 +52,17 @@ namespace Infrastructure.ExtendedServices.Email
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logger.Info("Email sent to {Email} with subject: {Subject}", toEmail, subject);
+                    _logger.Debug("Email sent to {Email} with subject: {Subject}", null, null, toEmail, subject);
                 }
                 else
                 {
                     var responseData = response.GetData()?.ToString() ?? "(no response data)";
-                    _logger.Error($"Failed to send email to {toEmail}. Status: {response.StatusCode}, Response: {responseData}");
+                    _logger.Error("Failed to send email to {toEmail}. Status: {StatusCode}, Response: {responseData}", null, null, toEmail, response.StatusCode, responseData);
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error($"Exception occurred while sending email to {toEmail}", ex);
+                _logger.Error("Exception occurred while sending email to {toEmail}", ex, null, null, toEmail);
                 throw;
             }
         }

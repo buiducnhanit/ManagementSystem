@@ -34,17 +34,17 @@ namespace WebAPI.Controllers
                 if (!ModelState.IsValid)
                 {
                     var errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList();
-                    _logger.Warn($"Invalid registration attempt for {dto.Email}. Errors: {string.Join(", ", errors)}");
+                    _logger.Error("Invalid registration attempt for {Email}. Errors: {Errors}", null, null, null, dto.Email, string.Join(", ", errors));
                     return BadRequest(ApiResponse<string>.FailureResponse("Invalid registration data.", 400, errors));
                 }
                 await _authService.RegisterAsync(dto);
 
-                _logger.Info($"User {dto.Email} registered successfully. Confirmation email sent.");
-                return Ok(ApiResponse<string>.SuccessResponse("Registration successful. Please check your email to confirm your account."));
+                _logger.Info("User {Email} registered successfully. Confirmation email sent.", null, null, dto.Email);
+                return Ok(ApiResponse<string>.SuccessResponse(null, "Registration successful. Please check your email to confirm your account."));
             }
             catch (HandleException ex)
             {
-                _logger.Error($"Unexpected error in Register for {dto.Email}", ex);
+                _logger.Error("Unexpected error in Register for {Email}", ex, null, null, dto.Email);
                 return BadRequest(ApiResponse<string>.FailureResponse("User registration failed.", 400, ex.Errors));
             }
         }
@@ -63,12 +63,12 @@ namespace WebAPI.Controllers
                     return Unauthorized(ApiResponse<string>.FailureResponse("Invalid credentials.", 401));
                 }
 
-                _logger.Info($"User {dto.Email} logged in successfully from IP: {clientIp} at UTC: {loginTime}.");
+                _logger.Info("User {Email} logged in successfully from IP: {clientIp} at UTC: {loginTime}.", null, null, dto.Email, clientIp!, loginTime);
                 return Ok(ApiResponse<LoginResponseDto>.SuccessResponse(loginResponse, "Login successful"));
             }
             catch (HandleException ex)
             {
-                _logger.Error($"Unexpected error in Login for {dto.Email}", ex);
+                _logger.Error("Unexpected error in Login for {Email}", ex, null, null, dto.Email);
                 return BadRequest(ApiResponse<string>.FailureResponse("User logged failed.", 400, ex.Errors));
             }
         }
@@ -82,7 +82,7 @@ namespace WebAPI.Controllers
                 if (!ModelState.IsValid)
                 {
                     var errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList();
-                    _logger.Warn($"Invalid refresh token request for user {dto.UserId}. Errors: {string.Join(", ", errors)}");
+                    _logger.Warn("Invalid refresh token request for user {UserId}. Errors: {Errors}", null, null, dto.UserId, string.Join(", ", errors));
                     return BadRequest(ApiResponse<string>.FailureResponse("Invalid refresh token data.", 400, errors));
                 }
 
@@ -93,7 +93,7 @@ namespace WebAPI.Controllers
             }
             catch (HandleException ex)
             {
-                _logger.Error($"Unexpected error in RefreshToken for user {dto.UserId}", ex);
+                _logger.Error("Unexpected error in RefreshToken for user {UserId}", ex, null, null, dto.UserId);
                 return BadRequest(ApiResponse<string>.FailureResponse("Failed to refresh token.", 400, ex.Errors));
             }
         }
@@ -107,7 +107,7 @@ namespace WebAPI.Controllers
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (string.IsNullOrEmpty(userId))
                 {
-                    _logger.Warn("Logout attempt with no user ID found in claims.");
+                    _logger.Warn("Logout attempt with no user {ID} found in claims.", null, null, User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                     return BadRequest(ApiResponse<string>.FailureResponse("User not authenticated.", 400));
                 }
 
@@ -118,7 +118,7 @@ namespace WebAPI.Controllers
             }
             catch (HandleException ex)
             {
-                _logger.Error($"Unexpected error in Logout for user ID {User.FindFirstValue(ClaimTypes.NameIdentifier)}", ex);
+                _logger.Error("Unexpected error in Logout for user ID {ID}", ex, null, null, User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 return BadRequest(ApiResponse<string>.FailureResponse("Logout failed.", 400, ex.Errors));
             }
         }
@@ -164,9 +164,9 @@ namespace WebAPI.Controllers
             try
             {
                 await _authService.ForgotPasswordAsyns(dto);
-                _logger.Info("Generate reset password token successfully for User: {Email}", dto.Email);
+                _logger.Info("Generate reset password token successfully for User: {Email}", null, null, dto.Email);
 
-                return Ok(ApiResponse<string>.SuccessResponse("Generate reset password token successfully. Confirm your email to set new password."));
+                return Ok(ApiResponse<string>.SuccessResponse(null, "Generate reset password token successfully. Confirm your email to set new password."));
             }
             catch (HandleException ex)
             {
@@ -183,9 +183,9 @@ namespace WebAPI.Controllers
             {
                 var user = await _authService.GetUserByIdAsync(dto.UserId);
                 var result = await _authService.ResetPasswordAsyns(dto);
-                _logger.Info("Reset password successfully for User: {Email}", user.Email);
+                _logger.Info("Reset password successfully for User: {Email}", null, null, user.Email!);
 
-                return Ok(ApiResponse<string>.SuccessResponse("Reset password successfully."));
+                return Ok(ApiResponse<string>.SuccessResponse(null, "Reset password successfully."));
             }
             catch (HandleException ex)
             {
@@ -208,16 +208,43 @@ namespace WebAPI.Controllers
                 var result = await _authService.ConfirmEmailAsync(request);
                 if (!result)
                 {
-                    _logger.Warn("Email confirmation failed for user ID {userId} with token {token}.", request.UserId, request.Token);
+                    _logger.Warn("Email confirmation failed for user ID {userId} with token {token}.", null, null, request.UserId, request.Token);
                     return BadRequest(ApiResponse<string>.FailureResponse("Email confirmation failed.", 400));
                 }
-                _logger.Info("Email confirmed successfully for user ID {userId}.", request.UserId);
+                _logger.Info("Email confirmed successfully for user ID {userId}.", null, null, request.UserId);
                 return Ok(ApiResponse<string>.SuccessResponse("Email confirmed successfully."));
             }
             catch (HandleException ex)
             {
-                _logger.Error("Unexpected error in ConfirmEmail for user ID {userId}", ex, request.UserId);
+                _logger.Error("Unexpected error in ConfirmEmail for user ID {userId}", ex, null, null, request.UserId);
                 return BadRequest(ApiResponse<string>.FailureResponse("Failed to confirm email.", 400, ex.Errors));
+            }
+        }
+
+        [HttpPost("resend-confirm-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResendEmailConfirmation(ResendEmailConfirmationRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.Email))
+                {
+                    _logger.Warn("Resend email confirmation attempted with missing email.");
+                    return BadRequest(ApiResponse<string>.FailureResponse("Invalid email confirmation request.", 400));
+                }
+                var result = await _authService.ResendEmailConfirmationAsync(request);
+                if (!result)
+                {
+                    _logger.Warn("Resend email confirmation failed for email {email}.", null, null, request.Email);
+                    return BadRequest(ApiResponse<string>.FailureResponse("Resend email confirmation failed.", 400));
+                }
+                _logger.Info("Email confirmation resent successfully for email {email}.", null, null, request.Email);
+                return Ok(ApiResponse<string>.SuccessResponse(null, "Email confirmation resent successfully."));
+            }
+            catch (HandleException ex)
+            {
+                _logger.Error("Unexpected error in ResendEmailConfirmation for email {email}", ex, null, null, request.Email);
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to resend email confirmation.", 400, ex.Errors));
             }
         }
 
@@ -235,22 +262,22 @@ namespace WebAPI.Controllers
 
                 if (request.NewPassword != request.ConfirmPassword)
                 {
-                    _logger.Warn("Change password failed for user ID {userId} due to password mismatch.", request.UserId);
+                    _logger.Warn("Change password failed for user ID {userId} due to password mismatch.", null, null, request.UserId);
                     return BadRequest(ApiResponse<string>.FailureResponse("New password and confirmation do not match.", 400));
                 }
 
                 var result = await _authService.ChangePasswordAsync(request);
                 if (!result)
                 {
-                    _logger.Warn("Change password failed for user ID {userId}.", request.UserId);
+                    _logger.Warn("Change password failed for user ID {userId}.", null, null, request.UserId);
                     return BadRequest(ApiResponse<string>.FailureResponse("Change password failed.", 400));
                 }
-                _logger.Info("Password changed successfully for user ID {userId}.", request.UserId);
-                return Ok(ApiResponse<string>.SuccessResponse("Password changed successfully."));
+                _logger.Info("Password changed successfully for user ID {userId}.", null, null, request.UserId);
+                return Ok(ApiResponse<string>.SuccessResponse(null, "Password changed successfully."));
             }
             catch (HandleException ex)
             {
-                _logger.Error("Unexpected error in ChangePassword for user ID {userId}", ex, request.UserId);
+                _logger.Error("Unexpected error in ChangePassword for user ID {userId}", ex, null, null, request.UserId);
                 return BadRequest(ApiResponse<string>.FailureResponse("Failed to change password.", 400, ex.Errors));
             }
         }
@@ -258,25 +285,23 @@ namespace WebAPI.Controllers
         [HttpPut("user-info")]
         public async Task<IActionResult> UpdateUserInfo([FromBody] UpdateAuthEvent command)
         {
-            _logger.Info("Received internal user info update request for user ID: {UserId}", command.Id);
-
             var user = await _authService.GetUserByIdAsync(command.Id.ToString());
             if (user == null)
             {
-                _logger.Info("User with ID {UserId} not found in AuthService for internal update.", command.Id);
+                _logger.Info("User with ID {UserId} not found in AuthService for internal update.", null, null, command.Id);
                 return NotFound($"User with ID: {command.Id} not found in AuthService.");
             }
 
             await _authService.UpdateUserInfoAsync(command);
-            _logger.Info("User info updated successfully for user ID: {UserId}", command.Id);
-            return Ok(ApiResponse<string>.SuccessResponse("User info updated successfully."));
+            _logger.Info("User info updated successfully for user ID: {UserId}", null, null, command.Id);
+            return Ok(ApiResponse<string>.SuccessResponse(null, "User info updated successfully."));
         }
 
         [HttpPost("create-user")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateUserByAdmin([FromBody] CreateUserByAdminRequest request)
         {
-            _logger.Info("Admin ({AdminEmail}) attempting to create new user with Email: {Email}", User.Identity?.Name, request.Email);
+            _logger.Info("Admin ({AdminEmail}) attempting to create new user with Email: {Email}", null, null, User.Identity?.Name!, request.Email);
 
             if (!ModelState.IsValid)
             {

@@ -30,12 +30,12 @@ namespace WebAPI.Controllers
             {
                 if (request == null)
                 {
-                    _logger.Error("CreateUser request is null.");
+                    _logger.Error("CreateUser request is null.", null, null, null);
                     return BadRequest("Invalid user data.");
                 }
 
                 var userProfile = await _userService.CreateUserAsync(request);
-                _logger.Info("User created successfully.", userProfile);
+                _logger.Info("User created successfully.", null, null, userProfile);
 
                 return Ok(ApiResponse<UserProfile>.SuccessResponse(userProfile, "User created successfully."));
             }
@@ -54,16 +54,16 @@ namespace WebAPI.Controllers
                 var userProfile = await _userService.GetUserByIdAsync(id);
                 if (userProfile == null)
                 {
-                    _logger.Warn("User with ID: {ID} not found.", id);
+                    _logger.Warn("User with ID: {ID} not found.", null, null, id);
                     return NotFound(ApiResponse<string>.FailureResponse("User not found.", 404));
                 }
 
-                _logger.Info("User retrieved successfully.", userProfile);
+                _logger.Info("User retrieved successfully.", null, null, userProfile);
                 return Ok(ApiResponse<UserProfile>.SuccessResponse(userProfile, "User retrieved successfully."));
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error retrieving user with ID {id}.", ex);
+                _logger.Error("Error retrieving user with ID {ID}.", ex, null, null, id);
                 return BadRequest(ApiResponse<string>.FailureResponse("Error retrieving user."));
             }
         }
@@ -78,12 +78,12 @@ namespace WebAPI.Controllers
                 //var userProfile = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (userProfile == null)
                 {
-                    _logger.Warn("User with ID: {ID} not found for update.", userId);
+                    _logger.Warn("User with ID: {ID} not found for update.", null, null, userId);
                     return NotFound(ApiResponse<string>.FailureResponse("User not found.", 404));
                 }
 
                 var updatedUserProfile = await _userService.UpdateUserAsync(userId, request);
-                _logger.Info("User updated successfully.", updatedUserProfile);
+                _logger.Info("User updated successfully.", null, null, updatedUserProfile);
 
                 return Ok(ApiResponse<UserProfile>.SuccessResponse(updatedUserProfile, "User updated successfully."));
             }
@@ -103,7 +103,7 @@ namespace WebAPI.Controllers
                 var userProfile = await _userService.GetUserByIdAsync(id);
                 if (userProfile == null)
                 {
-                    _logger.Warn("User with ID: {ID} not found for deletion.", id);
+                    _logger.Warn("User with ID: {ID} not found for deletion.", null, null, id);
                     return NotFound(ApiResponse<string>.FailureResponse("User not found.", 404));
                 }
                 var isDeleted = await _userService.DeleteUserAsync(id);
@@ -112,12 +112,12 @@ namespace WebAPI.Controllers
                     _logger.Error("Error deleting user.");
                     return BadRequest(ApiResponse<string>.FailureResponse("Error deleting user."));
                 }
-                _logger.Info("User deleted successfully.", id);
+                _logger.Info("User deleted successfully.", null, null, id);
                 return Ok(ApiResponse<string>.SuccessResponse("User deleted successfully."));
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error deleting user with ID {id}.", ex);
+                _logger.Error("Error deleting user with ID {ID}.", ex, null, null, id);
                 return BadRequest(ApiResponse<string>.FailureResponse("Error deleting user."));
             }
         }

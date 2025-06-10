@@ -41,7 +41,7 @@ namespace WebAPI.Extensions
                 app.UseSwaggerExtension(provider);
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseAuthentication();
             app.UseAuthorization();
