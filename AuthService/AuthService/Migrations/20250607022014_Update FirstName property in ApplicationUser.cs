@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Infrastructure.Migrations
+namespace AuthService.Migrations
 {
     /// <inheritdoc />
     public partial class UpdateFirstNamepropertyinApplicationUser : Migration

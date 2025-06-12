@@ -21,7 +21,7 @@ namespace WebAPI.Extensions
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IUserService, UserService>();
-
+            builder.Services.AddMassTransitService(configuration);
 
             builder.Services.AddControllers();
             builder.Services.AddCustomCors();

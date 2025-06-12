@@ -1,11 +1,10 @@
-﻿using WebAPI.DTOs;
-using WebAPI.Interfaces;
-using Asp.Versioning;
+﻿using Asp.Versioning;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using WebAPI.DTOs;
+using WebAPI.Interfaces;
 
 namespace WebAPI.Controllers
 {

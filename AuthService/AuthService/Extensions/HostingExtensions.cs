@@ -42,6 +42,9 @@ namespace AuthService.Extensions
                 options.TokenLifespan = TimeSpan.FromMinutes(5);
             });
 
+            // Add MassTransit for Kafka
+            builder.Services.AddMassTransitService(configuration);
+
             builder.Services.AddAuthorization();
             builder.Services.AddControllers();
             builder.Services.AddSwaggerExtension();

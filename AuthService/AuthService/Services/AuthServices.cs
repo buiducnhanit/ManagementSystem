@@ -4,6 +4,7 @@ using AuthService.Interfaces;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Contracts;
+using MassTransit;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using System.Net;
@@ -23,9 +24,10 @@ namespace AuthService.Services
         private readonly IRefreshTokenService _refreshTokenService;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly PasswordOptions _passwordOptions;
+        private readonly IPublishEndpoint _publishEndpoint;
 
         public AuthServices(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthServices> logger,
-            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory, IOptions<IdentityOptions> passwordOptions)
+            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory, IOptions<IdentityOptions> passwordOptions, IPublishEndpoint publishEndpoint)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -36,6 +38,7 @@ namespace AuthService.Services
             _refreshTokenService = refreshTokenService;
             _httpClientFactory = httpClientFactory;
             _passwordOptions = passwordOptions.Value.Password;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<string?> RegisterAsync(RegisterDto dto)
@@ -66,7 +69,22 @@ namespace AuthService.Services
 
                 await _userManager.AddToRoleAsync(user, "User");
                 _logger.Info("User {Email} created in AuthService DB.", null, null, user.Email);
-                await CallUserServiceToCreateProfile(user, dto);
+
+                // Call User Service to create user profile using HTTP request
+                //await CallUserServiceToCreateProfile(user, dto);
+
+                // Publish event to create user profile in User Service using MassTransit
+                await _publishEndpoint.Publish(new UserRegisteredEvent
+                {
+                    Id = user.Id,
+                    UserName = user.UserName ?? string.Empty,
+                    Email = user.Email!,
+                    FirstName = dto.FirstName ?? string.Empty,
+                    LastName = dto.LastName ?? string.Empty,
+                    PhoneNumber = dto.PhoneNumber ?? string.Empty,
+                    DateOfBirth = dto.DateOfBirth,
+                    Address = dto.Address ?? string.Empty,
+                });
 
                 var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 var confirmationLink = $"{_configuration["Frontend:BaseUrl"]}/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(emailToken)}";
@@ -109,7 +127,7 @@ namespace AuthService.Services
             var internalToken = _jwtTokenGenerator.GenerateInternalServiceToken();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
 
-            var createUserRequest = new CreateUserEvent
+            var createUserRequest = new UserRegisteredEvent
             {
                 Id = user.Id,
                 UserName = user.UserName ?? string.Empty,

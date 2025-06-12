@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Infrastructure.Migrations
+namespace AuthService.Migrations
 {
     [DbContext(typeof(IdentityDbContext))]
     [Migration("20250529090126_AddRefreshTokenLastUsedColumn")]

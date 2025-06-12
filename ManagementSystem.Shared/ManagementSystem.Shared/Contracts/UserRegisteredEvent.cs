@@ -1,6 +1,6 @@
-﻿namespace WebAPI.DTOs
+﻿namespace ManagementSystem.Shared.Contracts
 {
-    public class CreateUserRequest
+    public class UserRegisteredEvent
     {
         public Guid Id { get; set; }
         public string? UserName { get; set; }
