@@ -1,23 +1,22 @@
-﻿using ApplicationCore.DTOs;
-using ApplicationCore.Entities;
-using ApplicationCore.Interfaces;
+﻿using WebAPI.DTOs;
+using WebAPI.Entities;
+using WebAPI.Interfaces;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Contracts;
-using Microsoft.Extensions.Configuration;
-using System.Net.Http.Json;
+using AutoMapper;
 
-namespace ApplicationCore.Services
+namespace WebAPI.Services
 {
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
         private readonly ICustomLogger<UserService> _logger;
-        private readonly IMapperService _mapper;
+        private readonly IMapper _mapper;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
 
-        public UserService(IUserRepository userRepository, ICustomLogger<UserService> logger, IMapperService mapper, IHttpClientFactory httpClientFactory,
+        public UserService(IUserRepository userRepository, ICustomLogger<UserService> logger, IMapper mapper, IHttpClientFactory httpClientFactory,
             IConfiguration configuration)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));

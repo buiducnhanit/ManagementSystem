@@ -1,5 +1,5 @@
-﻿using ApplicationCore.DTOs;
-using ApplicationCore.Interfaces;
+﻿using WebAPI.DTOs;
+using WebAPI.Interfaces;
 using Asp.Versioning;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;

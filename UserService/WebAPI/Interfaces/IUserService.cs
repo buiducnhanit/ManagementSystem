@@ -1,6 +1,6 @@
-﻿using ApplicationCore.DTOs;
+﻿using WebAPI.DTOs;
 
-namespace ApplicationCore.Interfaces
+namespace WebAPI.Interfaces
 {
     public interface IUserService
     {

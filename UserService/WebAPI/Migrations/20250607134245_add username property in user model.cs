@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Infrastructure.Migrations
+namespace WebAPI.Migrations
 {
     /// <inheritdoc />
     public partial class addusernamepropertyinusermodel : Migration

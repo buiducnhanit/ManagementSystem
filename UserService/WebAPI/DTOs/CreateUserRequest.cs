@@ -1,6 +1,6 @@
-﻿namespace ApplicationCore.DTOs
+﻿namespace WebAPI.DTOs
 {
-    public class UserProfile
+    public class CreateUserRequest
     {
         public Guid Id { get; set; }
         public string? UserName { get; set; }

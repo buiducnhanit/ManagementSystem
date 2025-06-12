@@ -1,6 +1,6 @@
-﻿using ApplicationCore.Entities;
+﻿using WebAPI.Entities;
 
-namespace ApplicationCore.Interfaces
+namespace WebAPI.Interfaces
 {
     public interface IUserRepository
     {

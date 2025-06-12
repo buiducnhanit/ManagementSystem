@@ -1,10 +1,10 @@
-﻿using ApplicationCore.Entities;
-using ApplicationCore.Interfaces;
-using Infrastructure.Data;
+﻿using WebAPI.Entities;
+using WebAPI.Interfaces;
+using WebAPI.Data;
 using ManagementSystem.Shared.Common.Interfaces;
 using ManagementSystem.Shared.Common.Logging;
 
-namespace Infrastructure.Repositories
+namespace WebAPI.Repositories
 {
     public class UserRepository : IUserRepository
     {

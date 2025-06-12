@@ -1,7 +1,7 @@
-﻿using ApplicationCore.Entities;
+﻿using WebAPI.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.Data
+namespace WebAPI.Data
 {
     public class UserDbContext : DbContext
     {
