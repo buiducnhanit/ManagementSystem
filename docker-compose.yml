@@ -10,6 +10,7 @@ services:
       SA_PASSWORD: "${SQL_SA_PASSWORD}"
     ports:
       - "1433:1433"
+    restart: "on-failure"
     volumes:
       - sqlserver_data:/var/opt/mssql
     networks:
@@ -19,25 +20,27 @@ services:
   authservice:
     build:
       context: . 
-      dockerfile: AuthService/WebAPI/Dockerfile 
+      dockerfile: AuthService/AuthService/Dockerfile 
     container_name: authservice
     env_file:
       - .env
     environment:
       ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=AuthServiceDb;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;"
-      Jwt__Key: "${JWT_KEY}"
-      Jwt__Issuer: "${JWT_ISSUER}"
-      Jwt__Audience: "${JWT_AUDIENCE}"
-      EmailSettings__ApiKey: "${EMAIL_API_KEY}"
-      EmailSettings__SecretKey: "${EMAIL_SECRET_KEY}"
-      EmailSettings__SenderEmail: "${EMAIL_SENDER_EMAIL}"
-      EmailSettings__SenderName: "${EMAIL_SENDER_NAME}"
-      Frontend__BaseUrl: "${FRONTEND_BASE_URL}"
-      UserService__BaseUrl: "${USER_SERVICE_INTERNAL_URL}"
-      ASPNETCORE_URLS: "http://+:80"
+      JWT_KEY: "${JWT_KEY}"
+      JWT_ISSUER: "${JWT_ISSUER}"
+      JWT_AUDIENCE: "${JWT_AUDIENCE}"
+      EMAIL_API_KEY: "${EMAIL_API_KEY}"
+      EMAIL_SECRET_KEY: "${EMAIL_SECRET_KEY}"
+      EMAIL_SENDER_EMAIL: "${EMAIL_SENDER_EMAIL}"
+      EMAIL_SENDER_NAME: "${EMAIL_SENDER_NAME}"
+      FRONTEND_BASE_URL: "${FRONTEND_BASE_URL}"
+      USER_SERVICE_URL: "${USER_SERVICE_URL}"
+      ASPNETCORE_URLS: "${ASPNETCORE_URLS}"
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
+      Kafka__BootstrapServers: "${KAFKA_BOOTSTRAPSERVERS}"
     ports:
       - "5000:80"
+    restart: "on-failure"
     depends_on:
       - sqlserver
     networks:
@@ -53,14 +56,16 @@ services:
       - .env
     environment:
       ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=UserServiceDb;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;"
-      Jwt__Key: "${JWT_KEY}"
-      Jwt__Issuer: "${JWT_ISSUER}"
-      Jwt__Audience: "${JWT_AUDIENCE}"
-      AuthService__BaseUrl: "${AUTH_SERVICE_INTERNAL_URL}"
-      ASPNETCORE_URLS: "http://+:80"
+      JWT_KEY: "${JWT_KEY}"
+      JWT_ISSUER: "${JWT_ISSUER}"
+      JWT_AUDIENCE: "${JWT_AUDIENCE}"
+      AUTH_SERVICE_URL: "${AUTH_SERVICE_URL}"
+      ASPNETCORE_URLS: "${ASPNETCORE_URLS}"
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
+      Kafka__BootstrapServers: "${KAFKA_BOOTSTRAPSERVERS}"
     ports:
       - "5001:80"
+    restart: "on-failure"
     depends_on:
       - sqlserver
     networks:
@@ -75,17 +80,60 @@ services:
     env_file:
       - .env
     environment:
-      Jwt__Key: "${JWT_KEY}"
-      Jwt__Issuer: "${JWT_ISSUER}"
-      Jwt__Audience: "${JWT_AUDIENCE}"
-      ASPNETCORE_URLS: "http://+:80"
+      JWT_KEY: "${JWT_KEY}"
+      JWT_ISSUER: "${JWT_ISSUER}"
+      JWT_AUDIENCE: "${JWT_AUDIENCE}"
+      ASPNETCORE_URLS: "${ASPNETCORE_URLS}"
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
     ports:
       - "7000:80"  
-      - "7001:443" 
+    restart: "on-failure"
     depends_on:
       - authservice
       - userservice
+    networks:
+      - microservice_network
+      
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - microservice_network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    restart: "on-failure"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
+    networks:
+      - microservice_network
+      
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    restart: "on-failure"
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     networks:
       - microservice_network
 
