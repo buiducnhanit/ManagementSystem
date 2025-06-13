@@ -1,7 +1,9 @@
+import AppRouter from "./router"
+
 function App() {
   return (
     <>
-      <div>ABC</div>
+      <AppRouter/>
     </>
   )
 }
