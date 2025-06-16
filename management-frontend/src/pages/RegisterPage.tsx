@@ -13,9 +13,11 @@ const RegisterPage: React.FC = () => {
         "email": "",
         "phoneNumber": "",
         "address": "",
-        "dateOfBirth": "",
+        "dateOfBirth": new Date().toISOString().split('T')[0],
         "gender": true
     })
+    const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
+    const [errors, setErrors] = useState<string | null>(null);
     const navigate = useNavigate();
 
     const handleChange = <K extends keyof registerForm>(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -42,13 +44,21 @@ const RegisterPage: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setFieldErrors({});
+        setErrors(null);
         console.log("Form data:", registerForm);
         try {
-            const data = await registerAsync(registerForm);
-            console.log("Register successfully.", data);
+            const response = await registerAsync(registerForm);
+            console.log("Register successfully.", response.data);
             navigate("/login");
         } catch (error: any) {
-            throw new Error(error.response?.data?.message);
+            if (error.errors) {
+                // console.log(error.errors)
+                setFieldErrors(error.errors);
+            }
+            else {
+                setErrors(error?.title || error?.message)
+            }
         }
     }
 
@@ -56,6 +66,9 @@ const RegisterPage: React.FC = () => {
         <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
             <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
                 <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Đăng Ký Tài Khoản</h2>
+                {errors && (
+                    <div className="text-red-500 text-sm text-center">{errors}</div>
+                )}
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* UserName */}
                     <div>
@@ -68,9 +81,12 @@ const RegisterPage: React.FC = () => {
                             name="userName"
                             value={registerForm.userName}
                             onChange={handleChange}
-                            required
+                            // required
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {fieldErrors.UserName && fieldErrors.UserName.map((msg, idx) => (
+                            <p key={idx} className="text-red-500 text-xs mt-1">{msg}</p>
+                        ))}
                     </div>
 
                     {/* First Name */}
@@ -84,9 +100,12 @@ const RegisterPage: React.FC = () => {
                             name="firstName"
                             value={registerForm.firstName}
                             onChange={handleChange}
-                            required
+                            // required
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {fieldErrors.FirstName && fieldErrors.FirstName.map((msg, idx) => (
+                            <p key={idx} className="text-red-500 text-xs mt-1">{msg}</p>
+                        ))}
                     </div>
 
                     {/* Last Name */}
@@ -100,9 +119,12 @@ const RegisterPage: React.FC = () => {
                             name="lastName"
                             value={registerForm.lastName}
                             onChange={handleChange}
-                            required
+                            // required
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {fieldErrors.LastName && fieldErrors.LastName.map((msg, idx) => (
+                            <p key={idx} className="text-red-500 text-xs mt-1">{msg}</p>
+                        ))}
                     </div>
 
                     {/* Password */}
@@ -116,9 +138,12 @@ const RegisterPage: React.FC = () => {
                             name="password"
                             value={registerForm.password}
                             onChange={handleChange}
-                            required
+                            // required
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {fieldErrors.Password && fieldErrors.Password.map((msg, idx) => (
+                            <p key={idx} className="text-red-500 text-xs mt-1">{msg}</p>
+                        ))}
                     </div>
 
                     {/* Email */}
@@ -132,9 +157,12 @@ const RegisterPage: React.FC = () => {
                             name="email"
                             value={registerForm.email}
                             onChange={handleChange}
-                            required
+                            // required
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {fieldErrors.Email && fieldErrors.Email.map((msg, idx) => (
+                            <p key={idx} className="text-red-500 text-xs mt-1">{msg}</p>
+                        ))}
                     </div>
 
                     {/* Phone Number */}
@@ -143,14 +171,17 @@ const RegisterPage: React.FC = () => {
                             Số điện thoại
                         </label>
                         <input
-                            type="tel" // Use type="tel" for phone numbers
+                            type="tel"
                             id="phoneNumber"
                             name="phoneNumber"
                             value={registerForm.phoneNumber}
                             onChange={handleChange}
-                            required
+                            // required
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {fieldErrors.PhoneNumber && fieldErrors.PhoneNumber.map((msg, idx) => (
+                            <p key={idx} className="text-red-500 text-xs mt-1">{msg}</p>
+                        ))}
                     </div>
 
                     {/* Address */}
@@ -166,6 +197,9 @@ const RegisterPage: React.FC = () => {
                             onChange={handleChange}
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {fieldErrors.Address && fieldErrors.Address.map((msg, idx) => (
+                            <p key={idx} className="text-red-500 text-xs mt-1">{msg}</p>
+                        ))}
                     </div>
 
                     {/* Date of Birth */}
@@ -181,6 +215,9 @@ const RegisterPage: React.FC = () => {
                             onChange={handleChange}
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {fieldErrors.DateOfBirth && fieldErrors.DateOfBirth.map((msg, idx) => (
+                            <p key={idx} className="text-red-500 text-xs mt-1">{msg}</p>
+                        ))}
                     </div>
 
                     {/* Gender */}

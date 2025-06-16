@@ -4,6 +4,7 @@ import API_BASE_URL from "../utils/constants";
 
 const api = axios.create({
     baseURL: API_BASE_URL,
+    headers: { "Content-Type": "application/json" }
 });
 
 api.interceptors.request.use((config) => {
@@ -29,9 +30,13 @@ api.interceptors.response.use(
                 if (!oldRefreshToken) {
                     return Promise.reject(new Error("No refresh token available"));
                 }
-                const newAccessToken = await refreshTokenAsync({ refreshToken: oldRefreshToken });
-                originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
-                return api(originalRequest);
+                const refreshResponse = await refreshTokenAsync({ refreshToken: oldRefreshToken });
+                const newAccessToken = refreshResponse.data.data.AccessToken;
+                if (newAccessToken) {
+                    localStorage.setItem("token", JSON.stringify(newAccessToken))
+                    originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+                    return api(originalRequest);
+                }
             } catch (refreshError) {
                 return Promise.reject(refreshError);
             }

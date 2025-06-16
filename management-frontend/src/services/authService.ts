@@ -12,30 +12,30 @@ import api from "./axiosInstance";
 export const registerAsync = async (registerRequest: registerForm) => {
     try {
         console.log(registerRequest);
-        const { data } = await axios.post(`${API_BASE_URL}/auth/register`, registerRequest,
+        const response = await axios.post(`${API_BASE_URL}/auth/register`, registerRequest,
             {
                 headers: {
                     "Content-Type": "application/json",
                 },
             });
-        return data;
+        return response;
     } catch (error: any) {
-        throw new Error(error.response?.data?.message);
+        throw error.response?.data;
     }
 }
 
 export const loginAsync = async (loginRequest: loginForm) => {
     try {
-        console.log(loginRequest);
-        const { data } = await axios.post(`${API_BASE_URL}/auth/login`, loginRequest,
+        // console.log(loginRequest);
+        const response = await axios.post(`${API_BASE_URL}/auth/login`, loginRequest,
             {
                 headers: {
                     "Content-Type": "application/json",
                 },
             });
-        return data;
+        return response;
     } catch (error: any) {
-        throw new Error(error.response?.data?.message);
+        throw error.response?.data;
     }
 }
 

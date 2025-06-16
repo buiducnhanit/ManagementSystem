@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { loginAsync } from '../services/authService';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../redux/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -11,6 +12,22 @@ const LoginPage: React.FC = () => {
         rememberMe: false,
     });
     const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+    const validate = () => {
+        const newErrors: { email?: string; password?: string } = {};
+        if (!formData.email) {
+            newErrors.email = "Email không được để trống";
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = "Định dạng email không hợp lệ";
+        }
+        if (!formData.password) {
+            newErrors.password = "Password không được để trống";
+        }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
@@ -22,18 +39,18 @@ const LoginPage: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log(formData);
+        setErrors({});
+        if (!validate())
+            return;
         try {
             const response = await loginAsync(formData);
-            console.log(response);
-            if (response.statusCode === 200) {
-                dispatch(loginSuccess({ token: response.data.accessToken, refreshToken: response.data.refreshToken }));
-            }
-            else {
-                alert(response.message);
+            if (response.data.statusCode === 200) {
+                console.log(response.data)
+                dispatch(loginSuccess({ token: response.data.data.accessToken, refreshToken: response.data.data.refreshToken, expiresIn: response.data.data.expiresIn }));
+                navigate('/users')
             }
         } catch (error: any) {
-            alert(error.response?.data?.message)
+            alert(error.message + '\nLỗi: ' + error.errors)
         }
     }
 
@@ -53,9 +70,10 @@ const LoginPage: React.FC = () => {
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            required
+                            // required
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {errors.email && (<p className="text-red-500 text-xs mt-1">{errors.email}</p>)}
                     </div>
 
                     {/* Mật khẩu */}
@@ -69,9 +87,10 @@ const LoginPage: React.FC = () => {
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
-                            required
+                            // required
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
+                        {errors.password && (<p className="text-red-500 text-xs mt-1">{errors.password}</p>)}
                     </div>
 
                     {/* Remember me */}
