@@ -217,7 +217,7 @@ namespace AuthService.Services
                 _logger.Info("Revoked all existing refresh tokens for user {UserId} ({Email}) due to new login.", null, null, user.Id, user.Email!);
 
                 var accessToken = await _jwtTokenGenerator.GenerateTokenAsync(user);
-                var accessTokenExpires = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]!));
+                // var accessTokenExpires = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]!));
                 _logger.Info("Generated new access token for user {UserId} ({Email}).", null, null, user.Id, user.Email!);
 
                 var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user, clientIp, dto.RememberMe);
@@ -227,7 +227,7 @@ namespace AuthService.Services
                 {
                     AccessToken = accessToken,
                     RefreshToken = refreshToken.Token,
-                    ExpiresIn = accessTokenExpires,
+                    ExpiresIn = refreshToken.ExpiryTime,
                     UserId = user.Id
                 };
             }
