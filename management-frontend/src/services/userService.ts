@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { UserForm } from "../types/UserForm";
 import api from "./axiosInstance";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export const getAllUsersAsync = () => {
     try {
         const response = api.get('/users');
@@ -10,27 +11,45 @@ export const getAllUsersAsync = () => {
     }
 }
 
+export const getUserByIdAsync = (id: string) => {
+    try {
+        const response = api.get(`/users/${id}`);
+        return response;
+    } catch (error: any) {
+        throw error.response?.data;
+    }
+}
+
 export const getUserProfileAsync = () => {
     try {
-        const response = api.get('');
+        const response = api.get(`/users`);
         return response;
     } catch (error: any) {
         throw error.response?.data;
     }
 }
 
-export const updateUserAsync = () => {
+export const createUserAsync = (createUserRequest: UserForm) => {
     try {
-        const response = api.post('/users');
+        const response = api.post('/users', createUserRequest);
         return response;
     } catch (error: any) {
         throw error.response?.data;
     }
 }
 
-export const deleteUserAsync = () => {
+export const updateUserAsync = (id: string, updateUserRequest: UserForm) => {
     try {
-        const response = api.delete('/users');
+        const response = api.put(`/users/${id}`, updateUserRequest);
+        return response;
+    } catch (error: any) {
+        throw error.response?.data;
+    }
+}
+
+export const deleteUserAsync = (id: string) => {
+    try {
+        const response = api.delete(`/users/${id}`);
         return response;
     } catch (error: any) {
         throw error.response?.data;

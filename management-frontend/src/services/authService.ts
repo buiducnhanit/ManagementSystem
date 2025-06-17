@@ -41,7 +41,7 @@ export const loginAsync = async (loginRequest: loginForm) => {
 
 export const logoutAsync = async () => {
     try {
-        const { data } = await axios.post(`${API_BASE_URL}/auth/logout`);
+        const { data } = await api.post(`${API_BASE_URL}/auth/logout`);
         return data;
     } catch (error: any) {
         throw new Error(error.response?.data?.message);
@@ -89,10 +89,10 @@ export const resetPasswordAsync = async (resetPasswordRequest: resetPassword) =>
 
 export const confirmEmailAsync = async (userId: string, token: string) => {
     try {
-        const { data } = await api.post(`/auth/confirm-email`, { userId, token });
-        return data;
+        const response = await api.post(`/auth/confirm-email`, { userId, token });
+        return response.data;
     } catch (error: any) {
-        throw new Error(error.response?.data?.message);
+        throw error.response.data;
     }
 }
 

@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../redux/slices/authSlice';
+import { refreshTokenAsync } from '../services/authService';
+import { store } from '../redux/store';
 
 const useAutoLogout = () => {
     const dispatch = useDispatch();
@@ -20,6 +22,26 @@ const useAutoLogout = () => {
             }, timeout);
             return () => clearTimeout(timer);
         } else {
+            const oldRefreshToken = localStorage.getItem('refreshToken');
+            console.log(oldRefreshToken)
+            if (oldRefreshToken) {
+                refreshTokenAsync({ refreshToken: oldRefreshToken })
+                    .then(refreshTokenResponse => {
+                        const newAccessToken = refreshTokenResponse.data.data.accessToken;
+                        if (newAccessToken) {
+                            localStorage.setItem("token", newAccessToken);
+                            window.location.reload();
+                        }
+                        else {
+                            store.dispatch(logout());
+                            navigate('/login')
+                        }
+                    })
+                    .catch(() => {
+                        store.dispatch(logout());
+                        navigate('/login')
+                    })
+            }
             dispatch(logout());
             // localStorage.clear();
             navigate("/login");

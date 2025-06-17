@@ -1,6 +1,8 @@
 import axios from "axios";
 import { refreshTokenAsync } from "./authService";
 import API_BASE_URL from "../utils/constants";
+import { store } from "../redux/store";
+import { logout } from "../redux/slices/authSlice";
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -28,6 +30,8 @@ api.interceptors.response.use(
             try {
                 const oldRefreshToken = localStorage.getItem("refreshToken") || sessionStorage.getItem("refreshToken");
                 if (!oldRefreshToken) {
+                    store.dispatch(logout());
+                    window.location.href = '/login';
                     return Promise.reject(new Error("No refresh token available"));
                 }
                 const refreshResponse = await refreshTokenAsync({ refreshToken: oldRefreshToken });
@@ -38,6 +42,8 @@ api.interceptors.response.use(
                     return api(originalRequest);
                 }
             } catch (refreshError) {
+                store.dispatch(logout());
+                window.location.href = '/login';
                 return Promise.reject(refreshError);
             }
         }
