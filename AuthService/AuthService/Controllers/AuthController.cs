@@ -157,9 +157,9 @@ namespace AuthService.Controllers
             }
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest dto)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest dto)
         {
             try
             {
@@ -175,9 +175,9 @@ namespace AuthService.Controllers
             }
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword(ResetPasswordRequest dto)
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest dto)
         {
             try
             {
@@ -196,7 +196,7 @@ namespace AuthService.Controllers
 
         [HttpPost("confirm-email")]
         [AllowAnonymous]
-        public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest request)
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
         {
             try
             {
@@ -223,7 +223,7 @@ namespace AuthService.Controllers
 
         [HttpPost("resend-confirm-email")]
         [AllowAnonymous]
-        public async Task<IActionResult> ResendEmailConfirmation(ResendEmailConfirmationRequest request)
+        public async Task<IActionResult> ResendEmailConfirmation([FromBody] ResendEmailConfirmationRequest request)
         {
             try
             {
@@ -249,8 +249,8 @@ namespace AuthService.Controllers
         }
 
         [HttpPost("change-password")]
-        [Authorize]
-        public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+        //[Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             try
             {
