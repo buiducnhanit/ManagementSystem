@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { loginAsync } from '../services/authService';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../redux/slices/authSlice';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -118,9 +118,9 @@ const LoginPage: React.FC = () => {
 
                     {/* Liên kết "Quên mật khẩu?" */}
                     <div className="text-center">
-                        <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500 text-sm">
+                        <Link to="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500 text-sm">
                             Quên mật khẩu?
-                        </a>
+                        </Link>
                     </div>
 
                     {/* Liên kết "Chưa có tài khoản?" */}

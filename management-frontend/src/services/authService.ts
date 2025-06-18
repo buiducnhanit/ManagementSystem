@@ -4,8 +4,6 @@ import API_BASE_URL from "../utils/constants";
 import type { registerForm } from "../types/registerForm";
 import type { loginForm } from "../types/loginForm";
 import type { refreshToken } from "../types/refreshToken";
-import type { forgotPassword } from "../types/forgotPassword";
-import type { resetPassword } from "../types/resetPassword";
 import type { changePassword } from "../types/changePassword";
 import api from "./axiosInstance";
 
@@ -68,22 +66,23 @@ export const refreshTokenAsync = async (refreshTokenRequest: refreshToken) => {
     }
 }
 
-export const forgotPasswordAsync = async (forgotPasswordRequest: forgotPassword) => {
+export const forgotPasswordAsync = async (email: string) => {
     try {
-        const { data } = await api.post(`/auth/forgot-password`, forgotPasswordRequest);
-        return data;
+        const response = await api.post(`/auth/forgot-password`, { email });
+        return response;
     }
     catch (error: any) {
-        throw new Error(error.response?.data?.message);
+        throw error.response?.data;
     }
 }
 
-export const resetPasswordAsync = async (resetPasswordRequest: resetPassword) => {
+export const resetPasswordAsync = async (userId: string, token: string, password: string) => {
     try {
-        const { data } = await api.post(`/auth/reset-password`, resetPasswordRequest);
-        return data;
+        const response = await api.post(`/auth/reset-password`, { userId: userId, token: token, newPassword: password });
+        return response;
     } catch (error: any) {
-        throw new Error(error.response?.data?.message);
+        console.log(error.response?.data)
+        throw error.response?.data;
     }
 }
 

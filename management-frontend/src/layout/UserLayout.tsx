@@ -1,11 +1,14 @@
 import React from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import Header from '../components/Header'
+import Footer from '../components/Footer'
 
 const UserLayout: React.FC = () => {
+    const userName = "Duc Nhan"
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-100">
-            <Header />
+            <Header userName={userName} />
 
             <div className="flex flex-1">
                 <aside className="w-64 bg-white border-r p-6 hidden md:block">
@@ -19,6 +22,8 @@ const UserLayout: React.FC = () => {
                     <Outlet />
                 </main>
             </div>
+
+            <Footer />
         </div>
     )
 }
