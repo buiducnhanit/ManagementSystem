@@ -362,17 +362,24 @@ namespace AuthService.Services
                 var user = await _userManager.FindByEmailAsync(request.Email);
                 if (user == null)
                 {
-                    _logger.Error("Email is invalid.");
-                    throw new HandleException("Email is invalid.", 400);
+                    _logger.Error("User not found.");
+                    throw new HandleException("User not found.", 400, ["Email does not exist in the system."]);
                 }
 
                 string token = await _userManager.GeneratePasswordResetTokenAsync(user);
                 _logger.Debug("Generate password reset token successfull.");
 
                 // Send email to reset password
-                var resetPasswordLink = $"{_configuration["FrontendBaseUrl"]}/reset-password?userId={user.Id}&token={HttpUtility.UrlEncode(token)}";
+                var resetPasswordLink = $"{_configuration["Frontend:BaseUrl"]}/reset-password?userId={user.Id}&token={HttpUtility.UrlEncode(token)}";
+                _logger.Debug("Frontend base url: {FrontendBaseUrl}", null, null, _configuration["Frontend:BaseUrl"]!);
+                _logger.Debug("Reset password link: {resetPasswordLink}", null, null, resetPasswordLink);
                 _logger.Debug("Send email to reset password for user {ID} with token: {token}", null, null, user.Id, token);
                 await _sendMailService.SendEmailAsync(request.Email, "Reset password", $"Click the link to reset your password: <a href='{resetPasswordLink}'>Reset Password</a>");
+            }
+            catch (HandleException hex)
+            {
+                _logger.Error("Error in ForgotPasswordAsyns for email {Email}.", hex, null, null, request.Email);
+                throw;
             }
             catch (Exception ex)
             {
@@ -400,6 +407,11 @@ namespace AuthService.Services
                 }
 
                 return result.Succeeded;
+            }
+            catch (HandleException hex)
+            {
+                _logger.Error("Error in ResetPasswordAsyns for user ID {UserId}.", hex, null, null, dto.UserId);
+                throw;
             }
             catch (Exception ex)
             {
