@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../redux/slices/authSlice';
 import { refreshTokenAsync } from '../services/authService';
 
@@ -10,6 +10,9 @@ const ACCESS_TOKEN_REFRESH_THRESHOLD_SECONDS = 30;
 const useAutoLogout = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+     const location = useLocation();
+
+    const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/confirm-email'];
 
     const accessTokenTimerRef = useRef<number | undefined>(undefined);
     const idleActivityTimerRef = useRef<number | undefined>(undefined);
@@ -79,6 +82,7 @@ const useAutoLogout = () => {
 
 
     useEffect(() => {
+        if (publicPaths.includes(location.pathname)) return;
         const expiresIn = localStorage.getItem("expiresIn") || sessionStorage.getItem("expiresIn");
         if (expiresIn) {
             startAccessTokenRefreshTimer(expiresIn);
@@ -101,7 +105,7 @@ const useAutoLogout = () => {
                 window.removeEventListener(event, resetIdleTimer);
             });
         };
-    }, [dispatch, navigate]);
+    }, [dispatch, navigate, location.pathname]);
 
     return null;
 };
