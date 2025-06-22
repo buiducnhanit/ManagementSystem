@@ -77,6 +77,9 @@ namespace AuthService.Services
         public async Task<(string newAccessToken, RefreshToken newRefreshToken)?> RotateRefreshTokenAsync(string oldRefreshToken, string userId, string? clientIp)
         {
             var existingToken = await _refreshTokenRepository.GetAsync(oldRefreshToken, userId);
+            _logger.Debug("Old refesh token: {token}", propertyValues: oldRefreshToken);
+            _logger.Debug("User: {user}", propertyValues:userId);
+            _logger.Debug("Exit tokem: {token}", propertyValues: existingToken!);
 
             if (existingToken == null || !existingToken.IsActive)
             {
@@ -84,15 +87,15 @@ namespace AuthService.Services
                 return null;
             }
 
-            var timeSinceLastUsed = DateTime.UtcNow - existingToken.LastUsed;
-            var _idleSessionTimeoutHours = Convert.ToInt32(_configuration["Session:IdleSessionTimeoutInHours"]!);
-            var idleSessionTimeoutMinutes = _idleSessionTimeoutHours * 60;
-            if (timeSinceLastUsed.TotalMinutes >= idleSessionTimeoutMinutes)
-            {
-                _logger.Warn("Refresh token for user {userId} has been inactive for too long. Last used: {LastUsed}, now: {DateTime}", null, null, userId, existingToken.LastUsed.ToString(), DateTime.UtcNow);
-                await RevokeAllTokensForUserAsync(userId, $"Session idle timeout exceeded ({_idleSessionTimeoutHours} hours)", clientIp);
-                return null;
-            }
+            //var timeSinceLastUsed = DateTime.UtcNow - existingToken.LastUsed;
+            //var _idleSessionTimeoutHours = Convert.ToInt32(_configuration["Session:IdleSessionTimeoutInHours"]!);
+            //var idleSessionTimeoutMinutes = _idleSessionTimeoutHours * 60;
+            //if (timeSinceLastUsed.TotalMinutes >= idleSessionTimeoutMinutes)
+            //{
+            //    _logger.Warn("Refresh token for user {userId} has been inactive for too long. Last used: {LastUsed}, now: {DateTime}", null, null, userId, existingToken.LastUsed.ToString(), DateTime.UtcNow);
+            //    await RevokeAllTokensForUserAsync(userId, $"Session idle timeout exceeded ({_idleSessionTimeoutHours} hours)", clientIp);
+            //    return null;
+            //}
 
             if (existingToken.IsRevoked || existingToken.ExpiryTime < DateTime.UtcNow)
             {

@@ -123,39 +123,39 @@ namespace AuthService.Controllers
             }
         }
 
-        [Authorize]
-        [HttpGet("get-profile")]
-        public async Task<IActionResult> GetProfile()
-        {
-            try
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(userId))
-                {
-                    _logger.Warn("Profile request with no user ID found in claims.");
-                    return BadRequest(ApiResponse<string>.FailureResponse("User not authenticated.", 400));
-                }
-                var user = await _authService.GetUserByIdAsync(userId);
-                if (user == null)
-                {
-                    _logger.Warn($"Profile request for non-existing user ID {userId}.");
-                    return NotFound(ApiResponse<string>.FailureResponse("User not found.", 404));
-                }
-                var profileDto = new UserProfileDto
-                {
-                    UserName = user.UserName,
-                    Email = user.Email,
-                    Roles = await _authService.GetUserRolesAsync(user.Id.ToString())
-                };
-                _logger.Info($"User profile retrieved successfully for {user.Email}.");
-                return Ok(ApiResponse<UserProfileDto>.SuccessResponse(profileDto, "Profile retrieved successfully."));
-            }
-            catch (HandleException ex)
-            {
-                _logger.Error($"Unexpected error in GetProfile for user ID {User.FindFirstValue(ClaimTypes.NameIdentifier)}", ex);
-                return BadRequest(ApiResponse<string>.FailureResponse("Failed to retrieve profile.", 400, ex.Errors));
-            }
-        }
+        //[Authorize]
+        //[HttpGet("get-profile")]
+        //public async Task<IActionResult> GetProfile()
+        //{
+        //    try
+        //    {
+        //        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        //        if (string.IsNullOrEmpty(userId))
+        //        {
+        //            _logger.Warn("Profile request with no user ID found in claims.");
+        //            return BadRequest(ApiResponse<string>.FailureResponse("User not authenticated.", 400));
+        //        }
+        //        var user = await _authService.GetUserByIdAsync(userId);
+        //        if (user == null)
+        //        {
+        //            _logger.Warn($"Profile request for non-existing user ID {userId}.");
+        //            return NotFound(ApiResponse<string>.FailureResponse("User not found.", 404));
+        //        }
+        //        var profileDto = new UserProfileDto
+        //        {
+        //            UserName = user.UserName,
+        //            Email = user.Email,
+        //            Roles = await _authService.GetUserRolesAsync(user.Id.ToString())
+        //        };
+        //        _logger.Info($"User profile retrieved successfully for {user.Email}.");
+        //        return Ok(ApiResponse<UserProfileDto>.SuccessResponse(profileDto, "Profile retrieved successfully."));
+        //    }
+        //    catch (HandleException ex)
+        //    {
+        //        _logger.Error($"Unexpected error in GetProfile for user ID {User.FindFirstValue(ClaimTypes.NameIdentifier)}", ex);
+        //        return BadRequest(ApiResponse<string>.FailureResponse("Failed to retrieve profile.", 400, ex.Errors));
+        //    }
+        //}
 
         //[Authorize]
         [HttpPost("forgot-password")]
@@ -202,13 +202,13 @@ namespace AuthService.Controllers
             {
                 if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.Token))
                 {
-                    _logger.Warn("Email confirmation attempted with missing user ID or token.");
+                    _logger.Debug("Email confirmation attempted with missing user ID or token.");
                     return BadRequest(ApiResponse<string>.FailureResponse("Invalid email confirmation request.", 400));
                 }
                 var result = await _authService.ConfirmEmailAsync(request);
                 if (!result)
                 {
-                    _logger.Warn("Email confirmation failed for user ID {userId} with token {token}.", null, null, request.UserId, request.Token);
+                    _logger.Debug("Email confirmation failed for user ID {userId} with token {token}.", null, null, request.UserId, request.Token);
                     return BadRequest(ApiResponse<string>.FailureResponse("Email confirmation failed.", 400));
                 }
                 _logger.Info("Email confirmed successfully for user ID {userId}.", null, null, request.UserId);
@@ -249,12 +249,12 @@ namespace AuthService.Controllers
         }
 
         [HttpPost("change-password")]
-        //[Authorize]
+        [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             try
             {
-                if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.OldPassword) || string.IsNullOrEmpty(request.NewPassword))
+                if (string.IsNullOrEmpty(request.OldPassword) || string.IsNullOrEmpty(request.NewPassword))
                 {
                     _logger.Warn("Change password attempted with missing user ID or passwords.");
                     return BadRequest(ApiResponse<string>.FailureResponse("Invalid change password request.", 400));
@@ -262,22 +262,22 @@ namespace AuthService.Controllers
 
                 if (request.NewPassword != request.ConfirmPassword)
                 {
-                    _logger.Warn("Change password failed for user ID {userId} due to password mismatch.", null, null, request.UserId);
+                    _logger.Warn("Change password failed for user ID {userId} due to password mismatch.");
                     return BadRequest(ApiResponse<string>.FailureResponse("New password and confirmation do not match.", 400));
                 }
-
-                var result = await _authService.ChangePasswordAsync(request);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var result = await _authService.ChangePasswordAsync(userId!, request);
                 if (!result)
                 {
-                    _logger.Warn("Change password failed for user ID {userId}.", null, null, request.UserId);
+                    _logger.Warn("Change password failed for user ID {userId}.");
                     return BadRequest(ApiResponse<string>.FailureResponse("Change password failed.", 400));
                 }
-                _logger.Info("Password changed successfully for user ID {userId}.", null, null, request.UserId);
-                return Ok(ApiResponse<string>.SuccessResponse(null, "Password changed successfully."));
+                _logger.Info("Password changed successfully for user ID {userId}.");
+                return Ok(ApiResponse<string>.SuccessResponse(null!, "Password changed successfully."));
             }
             catch (HandleException ex)
             {
-                _logger.Error("Unexpected error in ChangePassword for user ID {userId}", ex, null, null, request.UserId);
+                _logger.Error("Unexpected error in ChangePassword for user ID {userId}", ex);
                 return BadRequest(ApiResponse<string>.FailureResponse("Failed to change password.", 400, ex.Errors));
             }
         }

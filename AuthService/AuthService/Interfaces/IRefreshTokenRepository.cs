@@ -9,5 +9,6 @@ namespace AuthService.Interfaces
         Task UpdateAsync(RefreshToken token);
         Task<List<RefreshToken>> GetAllActiveForUserAsync(string userId);
         Task SaveChangesAsync();
+        Task RevokeTokensInactiveFor(TimeSpan inactivity);
     }
 }

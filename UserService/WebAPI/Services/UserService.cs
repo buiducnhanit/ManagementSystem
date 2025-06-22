@@ -1,10 +1,12 @@
-﻿using WebAPI.DTOs;
-using WebAPI.Entities;
-using WebAPI.Interfaces;
+﻿using AutoMapper;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Contracts;
-using AutoMapper;
+using MassTransit;
+using MassTransit.Transports;
+using WebAPI.DTOs;
+using WebAPI.Entities;
+using WebAPI.Interfaces;
 
 namespace WebAPI.Services
 {
@@ -15,15 +17,17 @@ namespace WebAPI.Services
         private readonly IMapper _mapper;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
+        private readonly ITopicProducer<UserDeletedEvent> _topicProducer;
 
         public UserService(IUserRepository userRepository, ICustomLogger<UserService> logger, IMapper mapper, IHttpClientFactory httpClientFactory,
-            IConfiguration configuration)
+            IConfiguration configuration, ITopicProducer<UserDeletedEvent> topicProducer)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _topicProducer = topicProducer ?? throw new ArgumentNullException(nameof(topicProducer));
         }
 
         public async Task<UserProfile> CreateUserAsync(CreateUserRequest request)
@@ -156,7 +160,24 @@ namespace WebAPI.Services
         {
             try
             {
-                return await _userRepository.DeleteUserAsync(id);
+                var user = await _userRepository.GetUserByIdAsync(id);
+                if (user == null)
+                {
+                    _logger.Warn("User with ID: {ID} not found for deletion.", null, null, id);
+                    return false;
+                }    
+                var result = await _userRepository.DeleteUserAsync(id);
+                if (result)
+                {
+                    await _topicProducer.Produce(new UserDeletedEvent
+                    {
+                        Id = user.Id,
+                        Email = user.Email
+                    });
+                    _logger.Info("UserDeletedEvent published for user ID: {ID}", null, null, id);
+                }
+
+                return result;
             }
             catch (Exception ex)
             {

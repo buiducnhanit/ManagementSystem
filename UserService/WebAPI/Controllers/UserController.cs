@@ -3,6 +3,7 @@ using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using WebAPI.DTOs;
 using WebAPI.Interfaces;
 
@@ -140,6 +141,34 @@ namespace WebAPI.Controllers
             {
                 _logger.Error("Error retrieving all users.", ex);
                 return BadRequest(ApiResponse<string>.FailureResponse("Error retrieving users."));
+            }
+        }
+
+        [HttpGet("profile")]
+        [Authorize]
+        public async Task<IActionResult> GetUserProfile()
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    _logger.Warn("User ID not found in claims.");
+                    return NotFound(ApiResponse<string>.FailureResponse("User not found.", 404));
+                }
+                var userProfile = await _userService.GetUserByIdAsync(Guid.Parse(userId));
+                if (userProfile == null)
+                {
+                    _logger.Warn("User profile not found for ID: {ID}.", null, null, userId);
+                    return NotFound(ApiResponse<string>.FailureResponse("User profile not found.", 404));
+                }
+                _logger.Info("User profile retrieved successfully.", null, null, userProfile);
+                return Ok(ApiResponse<UserProfile>.SuccessResponse(userProfile, "User profile retrieved successfully."));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error retrieving user profile.", ex);
+                return BadRequest(ApiResponse<string>.FailureResponse("Error retrieving user profile."));
             }
         }
     }

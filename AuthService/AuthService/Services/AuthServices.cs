@@ -24,10 +24,11 @@ namespace AuthService.Services
         private readonly IRefreshTokenService _refreshTokenService;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly PasswordOptions _passwordOptions;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly ITopicProducer<UserRegisteredEvent> _userRegisteredProducer;
 
         public AuthServices(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthServices> logger,
-            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory, IOptions<IdentityOptions> passwordOptions, IPublishEndpoint publishEndpoint)
+            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory, IOptions<IdentityOptions> passwordOptions, 
+            ITopicProducer<UserRegisteredEvent> userRegisteredProducer)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -38,7 +39,7 @@ namespace AuthService.Services
             _refreshTokenService = refreshTokenService;
             _httpClientFactory = httpClientFactory;
             _passwordOptions = passwordOptions.Value.Password;
-            _publishEndpoint = publishEndpoint;
+            _userRegisteredProducer = userRegisteredProducer;
         }
 
         public async Task<string?> RegisterAsync(RegisterDto dto)
@@ -74,7 +75,7 @@ namespace AuthService.Services
                 //await CallUserServiceToCreateProfile(user, dto);
 
                 // Publish event to create user profile in User Service using MassTransit
-                await _publishEndpoint.Publish(new UserRegisteredEvent
+                await _userRegisteredProducer.Produce(new UserRegisteredEvent
                 {
                     Id = user.Id,
                     UserName = user.UserName ?? string.Empty,
@@ -217,7 +218,7 @@ namespace AuthService.Services
                 _logger.Info("Revoked all existing refresh tokens for user {UserId} ({Email}) due to new login.", null, null, user.Id, user.Email!);
 
                 var accessToken = await _jwtTokenGenerator.GenerateTokenAsync(user);
-                // var accessTokenExpires = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]!));
+                var accessTokenExpires = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]!));
                 _logger.Info("Generated new access token for user {UserId} ({Email}).", null, null, user.Id, user.Email!);
 
                 var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user, clientIp, dto.RememberMe);
@@ -227,7 +228,7 @@ namespace AuthService.Services
                 {
                     AccessToken = accessToken,
                     RefreshToken = refreshToken.Token,
-                    ExpiresIn = refreshToken.ExpiryTime,
+                    ExpiresIn = accessTokenExpires,
                     UserId = user.Id
                 };
             }
@@ -299,13 +300,14 @@ namespace AuthService.Services
 
                 var newAccessToken = refreshedToken.Value.newAccessToken;
                 var newRefreshToken = refreshedToken.Value.newRefreshToken;
+                var accessTokenExpires = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]!));
                 _logger.Info("User {UserId} refreshed token successfully.", null, null, dto.UserId);
 
                 return new RefreshTokenResponseDto
                 {
                     AccessToken = newAccessToken,
                     RefreshToken = newRefreshToken.Token,
-                    ExpiryTime = newRefreshToken.ExpiryTime
+                    ExpiryTime = accessTokenExpires
                 };
             }
             catch (HandleException)
@@ -427,14 +429,14 @@ namespace AuthService.Services
                 var user = await _userManager.FindByIdAsync(request.UserId);
                 if (user == null)
                 {
-                    _logger.Warn("User not found for ID {UserId}", request.UserId);
+                    _logger.Warn("User not found for ID {UserId}", propertyValues: request.UserId);
                     throw new HandleException("User not found.", 404);
                 }
                 var result = await _userManager.ConfirmEmailAsync(user, request.Token);
                 if (!result.Succeeded)
                 {
-                    _logger.Warn("Failed to confirm email for user {UserId}.", request.UserId);
-                    throw new HandleException("Email confirmation failed.", 400, result.Errors.Select(e => e.Description).ToList());
+                    _logger.Warn("Failed to confirm email for user {UserId}.", propertyValues: request.UserId);
+                    throw new HandleException("Email confirmation failed.", 400, [.. result.Errors.Select(e => e.Description)]);
                 }
 
                 return true;
@@ -466,6 +468,7 @@ namespace AuthService.Services
             }
 
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            _logger.Debug("Base URL for frontend: {FrontendBaseUrl}", null, null, _configuration["Frontend:BaseUrl"]!);
             var confirmationLink = $"{_configuration["Frontend:BaseUrl"]}/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
             var subject = "Confirm your email";
             var body = $"<p>Hello {user.UserName},</p>" +
@@ -483,20 +486,20 @@ namespace AuthService.Services
             }
         }
 
-        public async Task<bool> ChangePasswordAsync(ChangePasswordRequest request)
+        public async Task<bool> ChangePasswordAsync(string userId, ChangePasswordRequest request)
         {
             try
             {
-                var user = await _userManager.FindByIdAsync(request.UserId);
+                var user = await _userManager.FindByIdAsync(userId);
                 if (user == null)
                 {
-                    _logger.Warn("User not found for ID {UserId}", request.UserId);
+                    _logger.Warn("User not found for ID {UserId}", userId);
                     throw new HandleException("User not found.", 404);
                 }
                 var result = await _userManager.ChangePasswordAsync(user, request.OldPassword, request.NewPassword);
                 if (!result.Succeeded)
                 {
-                    _logger.Warn("Failed to change password for user {UserId}.", request.UserId);
+                    _logger.Warn("Failed to change password for user {UserId}.", userId);
                     throw new HandleException("Failed to change password.", 400, result.Errors.Select(e => e.Description).ToList());
                 }
 
@@ -508,7 +511,7 @@ namespace AuthService.Services
             }
             catch (Exception ex)
             {
-                _logger.Error("Unexpected error in ChangePasswordAsync for {userId}", ex, null, null, request.UserId);
+                _logger.Error("Unexpected error in ChangePasswordAsync for {userId}", ex, null, null, userId);
                 throw new HandleException("An unexpected error occurred during password change.", 500);
             }
         }
@@ -614,7 +617,7 @@ namespace AuthService.Services
             }
             _logger.Debug("New user identity {Email} created in AuthService and assigned 'User' role. User ID: {UserId}.", null, null, newUser.Email, newUser.Id.ToString());
 
-            await CallToUserServiceToCreateAccount(newUser);
+            await CallToUserServiceToCreateAccount(newUser, request);
 
             try
             {
@@ -672,7 +675,7 @@ namespace AuthService.Services
             return new string(chars.ToArray());
         }
 
-        public async Task CallToUserServiceToCreateAccount(ApplicationUser newUser)
+        public async Task CallToUserServiceToCreateAccount(ApplicationUser newUser, CreateUserByAdminRequest request)
         {
             try
             {
@@ -685,9 +688,15 @@ namespace AuthService.Services
 
                 var profileRequest = new CreateUserProfileRequest
                 {
-                    UserId = newUser.Id,
+                    Id = newUser.Id,
+                    UserName = request.UserName,
+                    FirstName = request.FirstName,
+                    LastName = request.LastName,
                     Email = newUser.Email!,
-                    PhoneNumber = newUser.PhoneNumber!
+                    Address = request.Address,
+                    PhoneNumber = newUser.PhoneNumber!,
+                    DateOfBirth = request.DateOfBirth,
+                    Gender = request.Gender,
                 };
 
                 var response = await httpClient.PostAsJsonAsync("api/v1/users", profileRequest);

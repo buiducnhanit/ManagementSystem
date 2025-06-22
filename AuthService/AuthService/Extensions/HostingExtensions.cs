@@ -32,6 +32,7 @@ namespace AuthService.Extensions
             builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
+            builder.Services.AddHostedService<TokenCleanupService>();
 
             // Configure email services
             builder.Services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));

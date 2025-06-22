@@ -18,7 +18,7 @@ namespace AuthService.Interfaces
         Task<bool> ResetPasswordAsyns(ResetPasswordRequest request);
         Task<bool> ConfirmEmailAsync(ConfirmEmailRequest request);
         Task<bool> ResendEmailConfirmationAsync(ResendEmailConfirmationRequest request);
-        Task<bool> ChangePasswordAsync(ChangePasswordRequest request);
+        Task<bool> ChangePasswordAsync(string userId, ChangePasswordRequest request);
         Task UpdateUserInfoAsync(UpdateAuthEvent request);
         Task<ApplicationUser> CreateUserByAdminAsync(CreateUserByAdminRequest request);
     }
