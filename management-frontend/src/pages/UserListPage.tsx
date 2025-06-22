@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react'
 import type { User } from '../types/User';
 import { useNavigate } from 'react-router-dom';
-import { getAllUsersAsync } from '../services/userService';
+import { deleteUserAsync, getAllUsersAsync } from '../services/userService';
 
 // const mockUsers: User[] = [
 //     {
@@ -113,10 +114,16 @@ const UserListPage: React.FC = () => {
         navigate(`/users/edit/${id}`);
     };
 
-    const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc muốn xóa người dùng này?')) {
+    const handleDelete = async (id: string) => {
+    if (window.confirm('Bạn có chắc muốn xóa người dùng này?')) {
+        try {
+            await deleteUserAsync(id);
             setUsers(prev => prev.filter(user => user.id !== id));
+        } catch (error:any) {
+            alert('Xóa người dùng thất bại!');
+            console.log(error)
         }
+    }
     };
 
     // Lọc theo search

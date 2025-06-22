@@ -56,7 +56,9 @@ const LoginPage: React.FC = () => {
                 navigate('/users')
             }
         } catch (error: any) {
-            alert(error.message + '\nLỗi: ' + error.errors)
+            // alert(error.message + '\nLỗi: ' + error.errors)
+            alert("Tài khoản hoặc mật khẩu không đúng.");
+            console.log(error)
         }
     }
 
