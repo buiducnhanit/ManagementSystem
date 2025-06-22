@@ -7,14 +7,14 @@ import type { UserForm } from '../types/UserForm';
 const CreateUserPage: React.FC = () => {
     const { id } = useParams<{ id?: string }>();
     const [formData, setFormData] = useState<UserForm>({
-        UserName: '',
-        Email: '',
-        FirstName: '',
-        LastName: '',
-        Address: '',
-        PhoneNumber: '',
-        DateOfBirth: new Date().toISOString().split('T')[0],
-        Gender: false
+        userName: '',
+        email: '',
+        firstName: '',
+        lastName: '',
+        address: '',
+        phoneNumber: '',
+        dateOfBirth: new Date().toISOString().split('T')[0],
+        gender: true
     });
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const navigate = useNavigate();
@@ -27,16 +27,29 @@ const CreateUserPage: React.FC = () => {
                 try {
                     setLoading(true);
                     const response = await getUserByIdAsync(id);
-                    setFormData(response.data);
+                    const user = response.data.data;
+                    setFormData({
+                        userName: user.userName || '',
+                        email: user.email || '',
+                        firstName: user.firstName || '',
+                        lastName: user.lastName || '',
+                        address: user.address || '',
+                        phoneNumber: user.phoneNumber || '',
+                        dateOfBirth: user.dateOfBirth
+                            ? user.dateOfBirth.split('T')[0]
+                            : new Date().toISOString().split('T')[0],
+                        gender: typeof user.gender === 'boolean'
+                            ? user.gender
+                            : user.gender === 'true'
+                    });
                 } catch (error: any) {
-                    console.log('Error fetching user: ', error)
                     setErrors({ general: 'Không thể tải thông tin người dùng.' })
-                }
-                finally {
+                    console.log(error);
+                } finally {
                     setLoading(false);
                 }
             }
-        }
+        };
 
         fetchUser();
     }, [id, isEditMode])
@@ -81,18 +94,18 @@ const CreateUserPage: React.FC = () => {
             {errors.general && <div className="text-red-500 mb-4">{errors.general}</div>}
             <form onSubmit={handleSubmit} className="max-w-md">
                 <div className="mb-4">
-                    <label htmlFor="UserName" className="block text-gray-700 text-sm font-bold mb-2">
+                    <label htmlFor="userName" className="block text-gray-700 text-sm font-bold mb-2">
                         Username:
                     </label>
                     <input
                         type="text"
-                        id="UserName"
-                        name="UserName"
-                        value={formData.UserName}
+                        id="userName"
+                        name="userName"
+                        value={formData.userName}
                         onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     />
-                    {errors.UserName && <p className="text-red-500 text-xs italic">{errors.UserName}</p>}
+                    {errors.userName && <p className="text-red-500 text-xs italic">{errors.userName}</p>}
                 </div>
                 <div className="mb-4">
                     <label htmlFor="Email" className="block text-gray-700 text-sm font-bold mb-2">
@@ -100,83 +113,83 @@ const CreateUserPage: React.FC = () => {
                     </label>
                     <input
                         type="email"
-                        id="Email"
-                        name="Email"
-                        value={formData.Email}
+                        id="email"
+                        name="email"
+                        value={formData.email}
                         onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     />
-                    {errors.Email && <p className="text-red-500 text-xs italic">{errors.Email}</p>}
+                    {errors.email && <p className="text-red-500 text-xs italic">{errors.email}</p>}
                 </div>
                 <div className="mb-4">
-                    <label htmlFor="FirstName" className="block text-gray-700 text-sm font-bold mb-2">
+                    <label htmlFor="firstName" className="block text-gray-700 text-sm font-bold mb-2">
                         First name:
                     </label>
                     <input
                         type="text"
-                        id="FirstName"
-                        name="FirstName"
-                        value={formData.FirstName}
+                        id="firstName"
+                        name="firstName"
+                        value={formData.firstName}
                         onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     />
-                    {errors.FirstName && <p className="text-red-500 text-xs italic">{errors.FirstName}</p>}
+                    {errors.firstName && <p className="text-red-500 text-xs italic">{errors.firstName}</p>}
                 </div>
                 <div className="mb-4">
-                    <label htmlFor="LastName" className="block text-gray-700 text-sm font-bold mb-2">
+                    <label htmlFor="lastName" className="block text-gray-700 text-sm font-bold mb-2">
                         Last name:
                     </label>
                     <input
                         type="text"
-                        id="LastName"
-                        name="LastName"
-                        value={formData.LastName}
+                        id="lastName"
+                        name="lastName"
+                        value={formData.lastName}
                         onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     />
-                    {errors.LastName && <p className="text-red-500 text-xs italic">{errors.LastName}</p>}
+                    {errors.lastName && <p className="text-red-500 text-xs italic">{errors.lastName}</p>}
                 </div>
                 <div className="mb-4">
-                    <label htmlFor="Address" className="block text-gray-700 text-sm font-bold mb-2">
+                    <label htmlFor="address" className="block text-gray-700 text-sm font-bold mb-2">
                         Address:
                     </label>
                     <input
                         type="text"
-                        id="Address"
-                        name="Address"
-                        value={formData.Email}
+                        id="address"
+                        name="address"
+                        value={formData.address}
                         onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     />
-                    {errors.Address && <p className="text-red-500 text-xs italic">{errors.Address}</p>}
+                    {errors.address && <p className="text-red-500 text-xs italic">{errors.address}</p>}
                 </div>
                 <div className="mb-4">
-                    <label htmlFor="PhoneNumber" className="block text-gray-700 text-sm font-bold mb-2">
+                    <label htmlFor="phoneNumber" className="block text-gray-700 text-sm font-bold mb-2">
                         Phone number:
                     </label>
                     <input
                         type="tel"
-                        id="PhoneNumber"
-                        name="PhoneNumber"
-                        value={formData.PhoneNumber}
+                        id="phoneNumber"
+                        name="phoneNumber"
+                        value={formData.phoneNumber}
                         onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     />
-                    {errors.PhoneNumber && <p className="text-red-500 text-xs italic">{errors.PhoneNumber}</p>}
+                    {errors.phoneNumber && <p className="text-red-500 text-xs italic">{errors.phoneNumber}</p>}
                 </div>
                 <div className="mb-4">
-                    <label htmlFor="DateOfBirth" className="block text-gray-700 text-sm font-bold mb-2">
+                    <label htmlFor="dateOfBirth" className="block text-gray-700 text-sm font-bold mb-2">
                         Date of birth:
                     </label>
                     <input
                         type="date"
-                        id="DateOfBirth"
-                        name="DateOfBirth"
-                        value={formData.DateOfBirth}
+                        id="dateOfBirth"
+                        name="dateOfBirth"
+                        value={formData.dateOfBirth}
                         onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     />
-                    {errors.DateOfBirth && <p className="text-red-500 text-xs italic">{errors.DateOfBirth}</p>}
+                    {errors.dateOfBirth && <p className="text-red-500 text-xs italic">{errors.dateOfBirth}</p>}
                 </div>
                 <div className="mb-4">
                     <label className="block text-gray-700 text-sm font-bold mb-2">
@@ -186,10 +199,10 @@ const CreateUserPage: React.FC = () => {
                         <label className="inline-flex items-center">
                             <input
                                 type="radio"
-                                name="Gender"
+                                name="gender"
                                 value="true"
-                                checked={formData.Gender === true}
-                                onChange={() => setFormData({ ...formData, Gender: true })}
+                                checked={formData.gender === true}
+                                onChange={() => setFormData({ ...formData, gender: true })}
                                 className="form-radio"
                             />
                             <span className="ml-2">Male</span>
@@ -197,16 +210,16 @@ const CreateUserPage: React.FC = () => {
                         <label className="inline-flex items-center">
                             <input
                                 type="radio"
-                                name="Gender"
+                                name="gender"
                                 value="false"
-                                checked={formData.Gender === false}
-                                onChange={() => setFormData({ ...formData, Gender: false })}
+                                checked={formData.gender === false}
+                                onChange={() => setFormData({ ...formData, gender: false })}
                                 className="form-radio"
                             />
                             <span className="ml-2">Female</span>
                         </label>
                     </div>
-                    {errors.Gender && <p className="text-red-500 text-xs italic">{errors.Gender}</p>}
+                    {errors.gender && <p className="text-red-500 text-xs italic">{errors.gender}</p>}
                 </div>
                 {/* <div className="mb-4">
                     <label htmlFor="role" className="block text-gray-700 text-sm font-bold mb-2">

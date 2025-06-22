@@ -1,10 +1,11 @@
 export interface UserForm {
-    UserName: string;
-    Email: string;
-    FirstName: string;
-    LastName: string;
-    Address: string;
-    PhoneNumber: string;
-    DateOfBirth: string;
-    Gender: boolean;
+    userName: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    // avatarUrl: string;
+    address: string;
+    phoneNumber: string;
+    dateOfBirth: string;
+    gender: boolean;
 }

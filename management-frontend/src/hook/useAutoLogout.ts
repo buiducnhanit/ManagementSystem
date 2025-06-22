@@ -1,52 +1,109 @@
-import { useEffect } from 'react'
-import { useDispatch } from 'react-redux'
+import { useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../redux/slices/authSlice';
 import { refreshTokenAsync } from '../services/authService';
-import { store } from '../redux/store';
+
+const IDLE_TIMEOUT_MINUTES = 5;
+const ACCESS_TOKEN_REFRESH_THRESHOLD_SECONDS = 30;
 
 const useAutoLogout = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const expiresIn = localStorage.getItem("expiresIn");
-        if (!expiresIn) return;
-        console.log(new Date(expiresIn).getTime() - Date.now());
-        const timeout = new Date(expiresIn).getTime() - Date.now();
-        if (timeout > 0) {
-            const timer = setTimeout(() => {
-                dispatch(logout());
-                // localStorage.clear();
-                navigate("/login");
-            }, timeout);
-            return () => clearTimeout(timer);
-        } else {
-            const oldRefreshToken = localStorage.getItem('refreshToken');
-            console.log(oldRefreshToken)
-            if (oldRefreshToken) {
-                refreshTokenAsync({ refreshToken: oldRefreshToken })
-                    .then(refreshTokenResponse => {
-                        const newAccessToken = refreshTokenResponse.data.data.accessToken;
-                        if (newAccessToken) {
-                            localStorage.setItem("token", newAccessToken);
-                            window.location.reload();
-                        }
-                        else {
-                            store.dispatch(logout());
-                            navigate('/login')
-                        }
-                    })
-                    .catch(() => {
-                        store.dispatch(logout());
-                        navigate('/login')
-                    })
-            }
+    const accessTokenTimerRef = useRef<number | undefined>(undefined);
+    const idleActivityTimerRef = useRef<number | undefined>(undefined);
+
+    const resetIdleTimer = () => {
+        clearTimeout(idleActivityTimerRef.current);
+        idleActivityTimerRef.current = setTimeout(() => {
+            console.log('User idle for too long. Logging out...');
             dispatch(logout());
-            // localStorage.clear();
+            navigate("/login");
+        }, IDLE_TIMEOUT_MINUTES * 60 * 1000);
+    };
+
+    const startAccessTokenRefreshTimer = (expiresInISOString: string | number | Date) => {
+        clearTimeout(accessTokenTimerRef.current);
+
+        const expirationTime = new Date(expiresInISOString).getTime();
+        const currentTime = Date.now();
+        const timeToRefresh = expirationTime - currentTime - (ACCESS_TOKEN_REFRESH_THRESHOLD_SECONDS * 1000);
+
+        console.log(`Access Token expires in: ${Math.floor((expirationTime - currentTime) / 1000)}s`);
+        console.log(`Time until next refresh attempt: ${Math.floor(timeToRefresh / 1000)}s`);
+
+        if (timeToRefresh > 0) {
+            accessTokenTimerRef.current = setTimeout(async () => {
+                const userId = localStorage.getItem("userId") || sessionStorage.getItem("userId");
+                const oldRefreshToken = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
+
+                if (oldRefreshToken && userId) {
+                    try {
+                        const refreshTokenResponse = await refreshTokenAsync(userId, oldRefreshToken);
+                        const newAccessToken = refreshTokenResponse.data?.data?.accessToken;
+                        const newRefreshToken = refreshTokenResponse.data?.data?.refreshToken;
+                        const newExpiresIn = refreshTokenResponse.data?.data?.expiryTime;
+
+                        if (newAccessToken && newExpiresIn) {
+                            if (localStorage.getItem('refreshToken')) {
+                                localStorage.setItem("token", newAccessToken);
+                                localStorage.setItem("refreshToken", newRefreshToken);
+                                localStorage.setItem("expiresIn", newExpiresIn);
+                            } else {
+                                sessionStorage.setItem("token", newAccessToken);
+                                sessionStorage.setItem("refreshToken", newRefreshToken);
+                                sessionStorage.setItem("expiresIn", newExpiresIn);
+                            }
+                            console.log('Access Token refreshed successfully!');
+                            startAccessTokenRefreshTimer(newExpiresIn);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error("Failed to refresh token:", error);
+                        dispatch(logout());
+                        navigate("/login");
+                        return;
+                    }
+                }
+                dispatch(logout());
+                navigate("/login");
+
+            }, timeToRefresh);
+        } else {
+            console.warn("Access Token already expired or close to expiration. Attempting immediate refresh or logout.");
+            dispatch(logout());
             navigate("/login");
         }
-    }, [dispatch, navigate]);
-}
+    };
 
-export default useAutoLogout
+
+    useEffect(() => {
+        const expiresIn = localStorage.getItem("expiresIn") || sessionStorage.getItem("expiresIn");
+        if (expiresIn) {
+            startAccessTokenRefreshTimer(expiresIn);
+        } else {
+            dispatch(logout());
+            navigate("/login");
+        }
+
+        const activityEvents = ['mousemove', 'keydown', 'click', 'scroll'];
+        activityEvents.forEach(event => {
+            window.addEventListener(event, resetIdleTimer);
+        });
+
+        resetIdleTimer();
+
+        return () => {
+            clearTimeout(accessTokenTimerRef.current);
+            clearTimeout(idleActivityTimerRef.current);
+            activityEvents.forEach(event => {
+                window.removeEventListener(event, resetIdleTimer);
+            });
+        };
+    }, [dispatch, navigate]);
+
+    return null;
+};
+
+export default useAutoLogout;

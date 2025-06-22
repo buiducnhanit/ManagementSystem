@@ -45,8 +45,14 @@ const LoginPage: React.FC = () => {
         try {
             const response = await loginAsync(formData);
             if (response.data.statusCode === 200) {
-                console.log(response.data)
-                dispatch(loginSuccess({ token: response.data.data.accessToken, refreshToken: response.data.data.refreshToken, expiresIn: response.data.data.expiresIn }));
+                // console.log(response.data)
+                dispatch(loginSuccess({
+                    token: response.data.data.accessToken,
+                    refreshToken: response.data.data.refreshToken,
+                    expiresIn: response.data.data.expiresIn,
+                    rememberMe: formData.rememberMe,
+                    userId: response.data.data.userId
+                }));
                 navigate('/users')
             }
         } catch (error: any) {

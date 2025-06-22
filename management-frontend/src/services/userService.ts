@@ -22,7 +22,7 @@ export const getUserByIdAsync = (id: string) => {
 
 export const getUserProfileAsync = () => {
     try {
-        const response = api.get(`/users`);
+        const response = api.get(`/users/profile`);
         return response;
     } catch (error: any) {
         throw error.response?.data;

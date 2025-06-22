@@ -6,13 +6,15 @@ interface AuthState {
     token: string | null;
     refreshToken: string | null;
     expiresIn: string | null;
+    userId: string | null;
 }
 
 const initialState: AuthState = {
     isAuthenticated: !!localStorage.getItem('token'),
-    token: localStorage.getItem("token") ? JSON.parse(localStorage.getItem("token") as string) : null,
-    refreshToken: localStorage.getItem("refreshToken") ? JSON.parse(localStorage.getItem("refreshToken") as string) : null,
+    token: localStorage.getItem("token") ? localStorage.getItem("token") : null,
+    refreshToken: localStorage.getItem("refreshToken") ? localStorage.getItem("refreshToken") : null,
     expiresIn: localStorage.getItem("expiresIn") || null,
+    userId: localStorage.getItem("userId") ? localStorage.getItem("userId") : null
 }
 
 const authSlice = createSlice({
@@ -20,16 +22,24 @@ const authSlice = createSlice({
     initialState,
     reducers: {
         loginSuccess: (state, action: PayloadAction<{
-            expiresIn: string | null; token: string, refreshToken: string
+            expiresIn: string | null; token: string, refreshToken: string, rememberMe: boolean, userId: string
         }>) => {
             state.isAuthenticated = true;
             state.token = action.payload.token;
             state.refreshToken = action.payload.refreshToken;
             state.expiresIn = action.payload.expiresIn;
-
-            localStorage.setItem("token", JSON.stringify(state.token));
-            localStorage.setItem("refreshToken", JSON.stringify(state.refreshToken));
-            localStorage.setItem("expiresIn", state.expiresIn ?? "")
+            state.userId = action.payload.userId;
+            if (action.payload.rememberMe) {
+                localStorage.setItem("token", state.token ?? "");
+                localStorage.setItem("refreshToken", state.refreshToken ?? "");
+                localStorage.setItem("expiresIn", state.expiresIn ?? "");
+                localStorage.setItem("userId", state.userId ?? "");
+            } else {
+                sessionStorage.setItem("token", state.token ?? "");
+                sessionStorage.setItem("refreshToken", state.refreshToken ?? "");
+                sessionStorage.setItem("expiresIn", state.expiresIn ?? "");
+                sessionStorage.setItem("userId", state.userId ?? "");
+            }
         },
         logout: (state) => {
             state.isAuthenticated = false;
@@ -38,8 +48,13 @@ const authSlice = createSlice({
             state.expiresIn = null;
 
             localStorage.removeItem("token");
+            sessionStorage.removeItem("token");
             localStorage.removeItem("refreshToken");
+            sessionStorage.removeItem("refreshToken");
             localStorage.removeItem("expiresIn");
+            sessionStorage.removeItem("expiresIn");
+            localStorage.removeItem("userId");
+            sessionStorage.removeItem("userId");
         }
     }
 })

@@ -3,19 +3,15 @@ import axios from "axios";
 import API_BASE_URL from "../utils/constants";
 import type { registerForm } from "../types/registerForm";
 import type { loginForm } from "../types/loginForm";
-import type { refreshToken } from "../types/refreshToken";
 import type { changePassword } from "../types/changePassword";
 import api from "./axiosInstance";
 
 export const registerAsync = async (registerRequest: registerForm) => {
     try {
-        console.log(registerRequest);
-        const response = await axios.post(`${API_BASE_URL}/auth/register`, registerRequest,
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
+        // console.log(registerRequest);
+        const response = await axios.post(`${API_BASE_URL}/auth/register`, registerRequest, {
+            headers: { "Content-Type": "application/json" }
+        });
         return response;
     } catch (error: any) {
         throw error.response?.data;
@@ -25,12 +21,9 @@ export const registerAsync = async (registerRequest: registerForm) => {
 export const loginAsync = async (loginRequest: loginForm) => {
     try {
         // console.log(loginRequest);
-        const response = await axios.post(`${API_BASE_URL}/auth/login`, loginRequest,
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
+        const response = await axios.post(`${API_BASE_URL}/auth/login`, loginRequest, {
+            headers: { "Content-Type": "application/json" }
+        });
         return response;
     } catch (error: any) {
         throw error.response?.data;
@@ -39,30 +32,22 @@ export const loginAsync = async (loginRequest: loginForm) => {
 
 export const logoutAsync = async () => {
     try {
-        const { data } = await api.post(`${API_BASE_URL}/auth/logout`);
-        return data;
+        const response = await api.post(`${API_BASE_URL}/auth/logout`);
+        return response;
     } catch (error: any) {
-        throw new Error(error.response?.data?.message);
+        throw error.response;
     }
 }
 
-export const refreshTokenAsync = async (refreshTokenRequest: refreshToken) => {
+export const refreshTokenAsync = async (userId: string, refreshToken: string) => {
     try {
-        const refreshToken = localStorage.getItem("refreshToken") || sessionStorage.getItem("refreshToken");
         if (!refreshToken)
             throw new Error("No refresh token found.");
-        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh-token`, refreshTokenRequest);
+        const response = await axios.post(`${API_BASE_URL}/auth/refresh-token`, { userId: userId, refreshToken: refreshToken });
 
-        if (localStorage.getItem("refreshToken")) {
-            localStorage.setItem("token", data.accessToken);
-        }
-        else {
-            sessionStorage.setItem("token", data.accessToken);
-        }
-
-        return data.accessToken;
+        return response;
     } catch (error: any) {
-        throw new Error(error.response?.data?.message);
+        throw error.response?.data;
     }
 }
 
