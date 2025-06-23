@@ -85,6 +85,7 @@ namespace AuthService.Services
                     PhoneNumber = dto.PhoneNumber ?? string.Empty,
                     DateOfBirth = dto.DateOfBirth,
                     Address = dto.Address ?? string.Empty,
+                    Gender = dto.Gender
                 });
 
                 var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -119,7 +120,7 @@ namespace AuthService.Services
             }
         }
 
-        private async Task CallUserServiceToCreateProfile(ApplicationUser user, RegisterDto dto)
+        public async Task CallUserServiceToCreateProfile(ApplicationUser user, RegisterDto dto)
         {
             var client = _httpClientFactory.CreateClient();
             client.BaseAddress = new Uri(_configuration["UserService:BaseUrl"]!);
@@ -682,7 +683,7 @@ namespace AuthService.Services
                 var httpClient = _httpClientFactory.CreateClient();
                 var userServiceBaseUrl = _configuration["UserService:BaseUrl"] ?? throw new InvalidOperationException("UserService:BaseUrl is not configured.");
                 httpClient.BaseAddress = new Uri(userServiceBaseUrl);
-
+                _logger.Debug("User service url: {url}", propertyValues: userServiceBaseUrl);
                 //var internalToken = _jwtInternalService.GenerateInternalServiceToken();
                 //httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
 

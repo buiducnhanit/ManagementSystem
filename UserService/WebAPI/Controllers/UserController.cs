@@ -68,21 +68,21 @@ namespace WebAPI.Controllers
             }
         }
 
-        [HttpPut]
+        [HttpPut("{id}")]
         [Authorize(Roles = "Admin, Manager")]
-        public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] UpdateUserRequest request)
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
         {
             try
             {
-                var userProfile = await _userService.GetUserByIdAsync(userId);
+                var userProfile = await _userService.GetUserByIdAsync(id);
                 //var userProfile = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (userProfile == null)
                 {
-                    _logger.Warn("User with ID: {ID} not found for update.", null, null, userId);
+                    _logger.Warn("User with ID: {ID} not found for update.", null, null, id);
                     return NotFound(ApiResponse<string>.FailureResponse("User not found.", 404));
                 }
 
-                var updatedUserProfile = await _userService.UpdateUserAsync(userId, request);
+                var updatedUserProfile = await _userService.UpdateUserAsync(id, request);
                 _logger.Info("User updated successfully.", null, null, updatedUserProfile);
 
                 return Ok(ApiResponse<UserProfile>.SuccessResponse(updatedUserProfile, "User updated successfully."));
@@ -123,7 +123,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "User")]
+        [Authorize(Roles = "Admin, User")]
         public async Task<IActionResult> GetAllUsers()
         {
             try

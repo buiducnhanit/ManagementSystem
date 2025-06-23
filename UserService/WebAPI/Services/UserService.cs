@@ -89,8 +89,9 @@ namespace WebAPI.Services
                 var oldEmail = existingUser.Email;
                 var oldPhoneNumber = existingUser.PhoneNumber;
 
-                var profileUserUpdated = _mapper.Map<UpdateUserRequest, User>(request);
-                profileUserUpdated.Id = id;
+                var profileUserUpdated = _mapper.Map<UpdateUserRequest, User>(request, existingUser);
+                _logger.Debug("Information user update {user}", propertyValues: profileUserUpdated);
+                //profileUserUpdated.Id = id;
                 var updatedUser = await _userRepository.UpdateUserAsync(profileUserUpdated);
                 _logger.Info("User profile updated successfully.", null, null, updatedUser);
 

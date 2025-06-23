@@ -21,7 +21,7 @@ namespace AuthService.Extensions
                     rider.UsingKafka((context, cfg) =>
                     {
                         cfg.Host(configuration["Kafka:BootstrapServers"]);
-                        cfg.TopicEndpoint<UserRegisteredEvent>("user-topic", nameof(UserDeletedConsumer), e =>
+                        cfg.TopicEndpoint<UserDeletedEvent>("user-topic", nameof(UserDeletedConsumer), e =>
                         {
                             e.ConfigureConsumer<UserDeletedConsumer>(context);
                         });
