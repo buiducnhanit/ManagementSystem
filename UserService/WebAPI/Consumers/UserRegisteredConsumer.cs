@@ -26,6 +26,7 @@ namespace WebAPI.Consumers
             try
             {
                 var UserRegisteredEvent = context.Message;
+                _logger.Debug("User registered event data message: {UserRegisteredEvent}", propertyValues: UserRegisteredEvent);
                 var userProfile = await _userService.CreateUserAsync(_mapper.Map<CreateUserRequest>(UserRegisteredEvent));
                 _logger.Info("User registered successfully.", null, null, userProfile);
             }

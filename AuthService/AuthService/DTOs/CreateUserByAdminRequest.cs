@@ -39,5 +39,7 @@ namespace AuthService.DTOs
         [Required]
         [Display(Name = "Gender")]
         public bool Gender { get; set; } = false;
+
+        public string? AvatarUrl { get; set; }
     }
 }

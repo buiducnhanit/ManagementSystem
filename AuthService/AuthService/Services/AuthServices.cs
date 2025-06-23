@@ -27,7 +27,7 @@ namespace AuthService.Services
         private readonly ITopicProducer<UserRegisteredEvent> _userRegisteredProducer;
 
         public AuthServices(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthServices> logger,
-            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory, IOptions<IdentityOptions> passwordOptions, 
+            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory, IOptions<IdentityOptions> passwordOptions,
             ITopicProducer<UserRegisteredEvent> userRegisteredProducer)
         {
             _userManager = userManager;
@@ -73,7 +73,8 @@ namespace AuthService.Services
 
                 // Call User Service to create user profile using HTTP request
                 //await CallUserServiceToCreateProfile(user, dto);
-
+                var roles = await GetUserRolesAsync(user.Id.ToString());
+                _logger.Debug("User's roles: {roles}", propertyValues: roles);
                 // Publish event to create user profile in User Service using MassTransit
                 await _userRegisteredProducer.Produce(new UserRegisteredEvent
                 {
@@ -85,7 +86,8 @@ namespace AuthService.Services
                     PhoneNumber = dto.PhoneNumber ?? string.Empty,
                     DateOfBirth = dto.DateOfBirth,
                     Address = dto.Address ?? string.Empty,
-                    Gender = dto.Gender
+                    Gender = dto.Gender,
+                    Roles = roles,
                 });
 
                 var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -99,14 +101,14 @@ namespace AuthService.Services
 
                 return null;
             }
-            catch (HandleException hex)
+            catch (HandleException)
             {
                 if (user != null && await _userManager.FindByEmailAsync(user.Email ?? string.Empty) != null)
                 {
                     await _userManager.DeleteAsync(user);
                     _logger.Warn("User {Email} created in AuthService was rolled back due to subsequent error.", null, null, user.Email!);
                 }
-                throw hex;
+                throw;
             }
             catch (Exception ex)
             {
@@ -686,7 +688,8 @@ namespace AuthService.Services
                 _logger.Debug("User service url: {url}", propertyValues: userServiceBaseUrl);
                 //var internalToken = _jwtInternalService.GenerateInternalServiceToken();
                 //httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
-
+                var roles = await GetUserRolesAsync(newUser.Id.ToString());
+                _logger.Debug("User's roles: {Roles}", propertyValues: roles);
                 var profileRequest = new CreateUserProfileRequest
                 {
                     Id = newUser.Id,
@@ -698,6 +701,9 @@ namespace AuthService.Services
                     PhoneNumber = newUser.PhoneNumber!,
                     DateOfBirth = request.DateOfBirth,
                     Gender = request.Gender,
+                    AvatarUrl = request.AvatarUrl,
+                    Roles = roles,
+
                 };
 
                 var response = await httpClient.PostAsJsonAsync("api/v1/users", profileRequest);

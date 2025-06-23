@@ -13,5 +13,6 @@ namespace WebAPI.Entities
         public DateTime? DateOfBirth { get; set; }
         public bool Gender { get; set; }
         public string? AvatarUrl { get; set; }
+        public List<string> Roles { get; set; } = [];
     }
 }

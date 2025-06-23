@@ -3,7 +3,6 @@ using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Contracts;
 using MassTransit;
-using MassTransit.Transports;
 using WebAPI.DTOs;
 using WebAPI.Entities;
 using WebAPI.Interfaces;
@@ -166,7 +165,7 @@ namespace WebAPI.Services
                 {
                     _logger.Warn("User with ID: {ID} not found for deletion.", null, null, id);
                     return false;
-                }    
+                }
                 var result = await _userRepository.DeleteUserAsync(id);
                 if (result)
                 {
