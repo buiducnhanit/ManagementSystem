@@ -57,7 +57,8 @@ const LoginPage: React.FC = () => {
             }
         } catch (error: any) {
             // alert(error.message + '\nLỗi: ' + error.errors)
-            alert("Tài khoản hoặc mật khẩu không đúng.");
+            // alert("Tài khoản hoặc mật khẩu không đúng.");
+            alert(error.errors)
             console.log(error)
         }
     }

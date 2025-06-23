@@ -39,7 +39,7 @@ const UserProfilePage: React.FC = () => {
                             Tên đăng nhập:
                         </label>
                         <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            {profile.UserName}
+                            {profile.userName}
                         </p>
                     </div>
                     <div className="mb-4">
@@ -47,7 +47,7 @@ const UserProfilePage: React.FC = () => {
                             Email:
                         </label>
                         <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            {profile.Email}
+                            {profile.email}
                         </p>
                     </div>
                     <div className="mb-4">
@@ -55,7 +55,7 @@ const UserProfilePage: React.FC = () => {
                             Họ và tên:
                         </label>
                         <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            {profile.FirstName} {profile.LastName}
+                            {profile.firstName} {profile.lastName}
                         </p>
                     </div>
                     <div className="mb-4">
@@ -63,7 +63,7 @@ const UserProfilePage: React.FC = () => {
                             Địa chỉ:
                         </label>
                         <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            {profile.Address}
+                            {profile.address}
                         </p>
                     </div>
                     <div className="mb-4">
@@ -71,7 +71,7 @@ const UserProfilePage: React.FC = () => {
                             Số điện thoại:
                         </label>
                         <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            {profile.PhoneNumber}
+                            {profile.phoneNumber}
                         </p>
                     </div>
                     <div className="mb-4">
@@ -79,7 +79,7 @@ const UserProfilePage: React.FC = () => {
                             Ngày sinh:
                         </label>
                         <p className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            {profile.DateOfBirth}
+                            {profile.dateOfBirth}
                         </p>
                     </div>
                     {/* <div className="mb-4">

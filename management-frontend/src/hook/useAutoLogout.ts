@@ -3,9 +3,7 @@ import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../redux/slices/authSlice';
 import { refreshTokenAsync } from '../services/authService';
-
-const IDLE_TIMEOUT_MINUTES = 5;
-const ACCESS_TOKEN_REFRESH_THRESHOLD_SECONDS = 30;
+import { ACCESS_TOKEN_REFRESH_THRESHOLD_SECONDS, IDLE_TIMEOUT_MINUTES } from '../utils/constants';
 
 const useAutoLogout = () => {
     const dispatch = useDispatch();

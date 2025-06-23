@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
-import API_BASE_URL from "../utils/constants";
+import { API_BASE_URL } from "../utils/constants";
 import type { registerForm } from "../types/registerForm";
 import type { loginForm } from "../types/loginForm";
 import type { changePassword } from "../types/changePassword";

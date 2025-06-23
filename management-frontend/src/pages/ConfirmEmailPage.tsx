@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import API_BASE_URL from '../utils/constants';
+import { API_BASE_URL } from "../utils/constants";
 
 const ConfirmEmailPage: React.FC = () => {
     const [searchParams] = useSearchParams();

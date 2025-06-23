@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import type { User } from '../types/User';
 import { useNavigate } from 'react-router-dom';
 import { deleteUserAsync, getAllUsersAsync } from '../services/userService';
+import { getUserRole } from '../utils/helper';
 
 // const mockUsers: User[] = [
 //     {
@@ -98,6 +99,7 @@ const UserListPage: React.FC = () => {
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const navigate = useNavigate();
+    const userRole = getUserRole();
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -115,15 +117,15 @@ const UserListPage: React.FC = () => {
     };
 
     const handleDelete = async (id: string) => {
-    if (window.confirm('Bạn có chắc muốn xóa người dùng này?')) {
-        try {
-            await deleteUserAsync(id);
-            setUsers(prev => prev.filter(user => user.id !== id));
-        } catch (error:any) {
-            alert('Xóa người dùng thất bại!');
-            console.log(error)
+        if (window.confirm('Bạn có chắc muốn xóa người dùng này?')) {
+            try {
+                await deleteUserAsync(id);
+                setUsers(prev => prev.filter(user => user.id !== id));
+            } catch (error: any) {
+                alert('Xóa người dùng thất bại!');
+                console.log(error)
+            }
         }
-    }
     };
 
     // Lọc theo search
@@ -168,7 +170,9 @@ const UserListPage: React.FC = () => {
                         <th className="py-2 px-4 border-b">Địa chỉ</th>
                         <th className="py-2 px-4 border-b">Ngày sinh</th>
                         <th className="py-2 px-4 border-b">Vai trò</th>
-                        <th className="py-2 px-4 border-b">Thao tác</th>
+                        {(userRole !== 'User') && (
+                            <th className="py-2 px-4 border-b">Thao tác</th>
+                        )}
                     </tr>
                 </thead>
                 <tbody>
@@ -181,10 +185,16 @@ const UserListPage: React.FC = () => {
                             <td className="py-2 px-4 border-b">{user.address}</td>
                             <td className="py-2 px-4 border-b">{user.dateOfBirth.split('T')[0]}</td>
                             <td className="py-2 px-4 border-b">{user.role}</td>
-                            <td className="py-2 px-4 border-b">
-                                <button onClick={() => handleEdit(user.id)} className="text-indigo-600 hover:underline mr-2">Sửa</button>
-                                <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:underline">Xóa</button>
-                            </td>
+                            {(userRole !== 'User') && (
+                                <td className="py-2 px-4 border-b">
+                                    {(userRole === 'Admin' || userRole === 'Manager') && (
+                                        <button onClick={() => handleEdit(user.id)} className="text-indigo-600 hover:underline mr-2">Sửa</button>
+                                    )}
+                                    {(userRole === 'Admin') && (
+                                        <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:underline">Xóa</button>
+                                    )}
+                                </td>
+                            )}
                         </tr>
                     ))}
                 </tbody>

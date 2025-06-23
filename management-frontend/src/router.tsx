@@ -12,6 +12,10 @@ import UserProfilePage from './pages/UserProfilePage';
 import ChangePassword from './pages/ChangePassword';
 import PrivateRoute from './router/PrivateRoute';
 import PublicRoute from './router/PublicRoute';
+import ForbiddenPage from './pages/errors/ForbiddenPage';
+import UnauthorizedPage from './pages/errors/UnauthorizedPage';
+import NotFoundPage from './pages/errors/NotFoundPage';
+import RoleRoute from './router/RoleRoute';
 
 const AppRouter: React.FC = () => {
     return (
@@ -38,11 +42,26 @@ const AppRouter: React.FC = () => {
 
             {/* Protected routes */}
             <Route element={<PrivateRoute><UserLayout /></PrivateRoute>}>
-                <Route path='users' element={<UserListPage />} />
-                <Route path='users/create' element={<CreateUserPage />} />
-                <Route path='users/edit/:id' element={<CreateUserPage />} />
+                <Route path='users' element={
+                    <RoleRoute allowedRoles={['Admin', 'User']}>
+                        <UserListPage />
+                    </RoleRoute>} />
+                <Route path='users/create' element={
+                    <RoleRoute allowedRoles={['Admin']}>
+                        <CreateUserPage />
+                    </RoleRoute>} />
+                <Route path='users/edit/:id' element={
+                    <RoleRoute allowedRoles={['Admin', 'Manager']}>
+                        <CreateUserPage />
+                    </RoleRoute>} />
                 <Route path='profile' element={<UserProfilePage />} />
             </Route>
+
+            <Routes>
+                <Route path='/forbidden' element={<ForbiddenPage />} />
+                <Route path='/unauthorized' element={<UnauthorizedPage />} />
+                <Route path='/*' element={<NotFoundPage />} />
+            </Routes>
         </Routes>
     )
 }
