@@ -18,7 +18,7 @@ const useAutoLogout = () => {
     const resetIdleTimer = () => {
         clearTimeout(idleActivityTimerRef.current);
         idleActivityTimerRef.current = setTimeout(() => {
-            console.log('User idle for too long. Logging out...');
+            // console.log('User idle for too long. Logging out...');
             dispatch(logout());
             navigate("/login");
         }, IDLE_TIMEOUT_MINUTES * 60 * 1000);
@@ -31,8 +31,8 @@ const useAutoLogout = () => {
         const currentTime = Date.now();
         const timeToRefresh = expirationTime - currentTime - (ACCESS_TOKEN_REFRESH_THRESHOLD_SECONDS * 1000);
 
-        console.log(`Access Token expires in: ${Math.floor((expirationTime - currentTime) / 1000)}s`);
-        console.log(`Time until next refresh attempt: ${Math.floor(timeToRefresh / 1000)}s`);
+        // console.log(`Access Token expires in: ${Math.floor((expirationTime - currentTime) / 1000)}s`);
+        // console.log(`Time until next refresh attempt: ${Math.floor(timeToRefresh / 1000)}s`);
 
         if (timeToRefresh > 0) {
             accessTokenTimerRef.current = setTimeout(async () => {
@@ -56,7 +56,7 @@ const useAutoLogout = () => {
                                 sessionStorage.setItem("refreshToken", newRefreshToken);
                                 sessionStorage.setItem("expiresIn", newExpiresIn);
                             }
-                            console.log('Access Token refreshed successfully!');
+                            // console.log('Access Token refreshed successfully!');
                             startAccessTokenRefreshTimer(newExpiresIn);
                             return;
                         }
@@ -72,7 +72,7 @@ const useAutoLogout = () => {
 
             }, timeToRefresh);
         } else {
-            console.warn("Access Token already expired or close to expiration. Attempting immediate refresh or logout.");
+            // console.warn("Access Token already expired or close to expiration. Attempting immediate refresh or logout.");
             dispatch(logout());
             navigate("/login");
         }

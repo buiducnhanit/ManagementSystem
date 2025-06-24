@@ -4,95 +4,10 @@ import type { User } from '../types/User';
 import { useNavigate } from 'react-router-dom';
 import { deleteUserAsync, getAllUsersAsync } from '../services/userService';
 import { getUserRole } from '../utils/helper';
-
-// const mockUsers: User[] = [
-//     {
-//         id: "1",
-//         userName: "admin",
-//         email: "admin@example.com",
-//         lastName: "User",
-//         firstName: "Admin",
-//         role: "Admin",
-//         avatarUrl: "",
-//         address: "123 Admin St",
-//         phoneNumber: "1234567890",
-//         dateOfBirth: "1990-01-01"
-//     },
-//     {
-//         id: "2",
-//         userName: "john",
-//         email: "john@example.com",
-//         lastName: "Doe",
-//         firstName: "John",
-//         role: "User",
-//         avatarUrl: "",
-//         address: "456 John Ave",
-//         phoneNumber: "2345678901",
-//         dateOfBirth: "1992-02-02"
-//     },
-//     {
-//         id: "3",
-//         userName: "jane",
-//         email: "jane@example.com",
-//         lastName: "Smith",
-//         firstName: "Jane",
-//         role: "User",
-//         avatarUrl: "",
-//         address: "789 Jane Blvd",
-//         phoneNumber: "3456789012",
-//         dateOfBirth: "1994-03-03"
-//     },
-//     {
-//         id: "4",
-//         userName: "alice",
-//         email: "alice@example.com",
-//         lastName: "Wonderland",
-//         firstName: "Alice",
-//         role: "User",
-//         avatarUrl: "",
-//         address: "123 Fairy St",
-//         phoneNumber: "4567890123",
-//         dateOfBirth: "1995-04-04"
-//     },
-//     {
-//         id: "5",
-//         userName: "bob",
-//         email: "bob@example.com",
-//         lastName: "Builder",
-//         firstName: "Bob",
-//         role: "User",
-//         avatarUrl: "",
-//         address: "321 Build Ave",
-//         phoneNumber: "5678901234",
-//         dateOfBirth: "1996-05-05"
-//     },
-//     {
-//         id: "5",
-//         userName: "bob",
-//         email: "bob@example.com",
-//         lastName: "Builder",
-//         firstName: "Bob",
-//         role: "User",
-//         avatarUrl: "",
-//         address: "321 Build Ave",
-//         phoneNumber: "5678901234",
-//         dateOfBirth: "1996-05-05"
-//     },
-//     {
-//         id: "5",
-//         userName: "bob",
-//         email: "bob@example.com",
-//         lastName: "Builder",
-//         firstName: "Bob",
-//         role: "User",
-//         avatarUrl: "",
-//         address: "321 Build Ave",
-//         phoneNumber: "5678901234",
-//         dateOfBirth: "1996-05-05"
-//     },
-// ];
+import { addUserRoleAsync, removeUserRoleAsync } from '../services/authService';
 
 const PAGE_SIZE = 5;
+const ALL_ROLES = ['Admin', 'Manager', 'User'];
 
 const UserListPage: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -107,7 +22,6 @@ const UserListPage: React.FC = () => {
             if (response.data && response.data.data) {
                 setUsers(response.data.data);
             }
-            // setUsers(mockUsers);
         };
         fetchUsers();
     }, []);
@@ -128,7 +42,6 @@ const UserListPage: React.FC = () => {
         }
     };
 
-    // Lọc theo search
     const filteredUsers = users.filter(
         user =>
             user.userName.toLowerCase().includes(search.toLowerCase()) ||
@@ -136,7 +49,6 @@ const UserListPage: React.FC = () => {
             `${user.firstName} ${user.lastName}`.toLowerCase().includes(search.toLowerCase())
     );
 
-    // Phân trang
     const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE);
     const paginatedUsers = filteredUsers.slice(
         (currentPage - 1) * PAGE_SIZE,
@@ -148,68 +60,160 @@ const UserListPage: React.FC = () => {
         setCurrentPage(1);
     };
 
+    const handleAddRole = async (userId: string, role: string) => {
+        try {
+            await addUserRoleAsync(userId, [role]);
+            setUsers(prev =>
+                prev.map(user =>
+                    user.id === userId && !user.roles?.includes(role)
+                        ? { ...user, roles: user.roles ? [...user.roles, role] : [role] }
+                        : user
+                )
+            );
+        } catch (error: any) {
+            alert('Thêm vai trò thất bại!');
+            console.log(error);
+        }
+    }
+
+    const handleRemoveRole = async (userId: string, role: string) => {
+        try {
+            await removeUserRoleAsync(userId, [role]);
+            setUsers(prev =>
+                prev.map(user =>
+                    user.id === userId
+                        ? { ...user, roles: user.roles?.filter(r => r !== role) }
+                        : user
+                )
+            );
+        } catch (error: any) {
+            alert('Xóa vai trò thất bại!');
+            console.log(error);
+        }
+    }
+
     return (
-        <div>
-            <h2 className="text-2xl font-bold mb-4">Danh sách người dùng</h2>
-            <div className="mb-4 flex justify-between">
+        <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow-lg mt-8">
+            <h2 className="text-3xl font-extrabold mb-6 text-indigo-700 flex items-center gap-2">
+                <svg className="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m13-7V7a4 4 0 00-4-4H7a4 4 0 00-4 4v2m16 0a4 4 0 01-3 3.87M4 10a4 4 0 003 3.87m0 0v2a4 4 0 004 4h4a4 4 0 004-4v-2m-8 0a4 4 0 01-3-3.87"></path></svg>
+                Danh sách người dùng
+            </h2>
+            <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <input
                     type="text"
                     placeholder="Tìm kiếm tên, email, họ tên..."
                     value={search}
                     onChange={handleSearchChange}
-                    className="border px-3 py-2 rounded w-1/3"
+                    className="border border-gray-300 px-4 py-2 rounded-lg w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 />
             </div>
-            <table className="min-w-full bg-white border rounded shadow">
-                <thead className='text-left bg-gray-100'>
-                    <tr>
-                        <th className="py-2 px-4 border-b">Tên đăng nhập</th>
-                        <th className="py-2 px-4 border-b">Họ tên</th>
-                        <th className="py-2 px-4 border-b">Email</th>
-                        <th className="py-2 px-4 border-b">Số điện thoại</th>
-                        <th className="py-2 px-4 border-b">Địa chỉ</th>
-                        <th className="py-2 px-4 border-b">Ngày sinh</th>
-                        <th className="py-2 px-4 border-b">Vai trò</th>
-                        {(userRole !== 'User') && (
-                            <th className="py-2 px-4 border-b">Thao tác</th>
-                        )}
-                    </tr>
-                </thead>
-                <tbody>
-                    {paginatedUsers.map((user) => (
-                        <tr key={user.id}>
-                            <td className="py-2 px-4 border-b">{user.userName}</td>
-                            <td className="py-2 px-4 border-b">{user.firstName} {user.lastName}</td>
-                            <td className="py-2 px-4 border-b">{user.email}</td>
-                            <td className="py-2 px-4 border-b">{user.phoneNumber}</td>
-                            <td className="py-2 px-4 border-b">{user.address}</td>
-                            <td className="py-2 px-4 border-b">{user.dateOfBirth.split('T')[0]}</td>
-                            <td className="py-2 px-4 border-b">{user.role}</td>
+            <div className="overflow-x-auto rounded-lg shadow">
+                <table className="min-w-full bg-white">
+                    <thead className='text-left bg-indigo-50'>
+                        <tr>
+                            <th className="py-3 px-4 border-b font-semibold text-gray-700">Tên đăng nhập</th>
+                            <th className="py-3 px-4 border-b font-semibold text-gray-700">Họ tên</th>
+                            <th className="py-3 px-4 border-b font-semibold text-gray-700">Email</th>
+                            <th className="py-3 px-4 border-b font-semibold text-gray-700">Số điện thoại</th>
+                            <th className="py-3 px-4 border-b font-semibold text-gray-700">Địa chỉ</th>
+                            <th className="py-3 px-4 border-b font-semibold text-gray-700">Ngày sinh</th>
+                            <th className="py-3 px-4 border-b font-semibold text-gray-700">Vai trò</th>
                             {(userRole !== 'User') && (
-                                <td className="py-2 px-4 border-b">
-                                    {(userRole === 'Admin' || userRole === 'Manager') && (
-                                        <button onClick={() => handleEdit(user.id)} className="text-indigo-600 hover:underline mr-2">Sửa</button>
-                                    )}
-                                    {(userRole === 'Admin') && (
-                                        <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:underline">Xóa</button>
-                                    )}
-                                </td>
+                                <th className="py-3 px-4 border-b font-semibold text-gray-700">Thao tác</th>
                             )}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-
-            <div className="flex justify-end mt-4 space-x-2">
+                    </thead>
+                    <tbody>
+                        {paginatedUsers.map((user) => (
+                            <tr key={user.id} onClick={() => navigate(`/users/${user.id}`)} className="hover:bg-indigo-50 transition-colors hover:cursor-pointer">
+                                <td className="py-2 px-4 border-b">{user.userName}</td>
+                                <td className="py-2 px-4 border-b">{user.firstName} {user.lastName}</td>
+                                <td className="py-2 px-4 border-b">{user.email}</td>
+                                <td className="py-2 px-4 border-b">{user.phoneNumber}</td>
+                                <td className="py-2 px-4 border-b">{user.address}</td>
+                                <td className="py-2 px-4 border-b">{user.dateOfBirth?.split('T')[0]}</td>
+                                <td className="py-2 px-4 border-b">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {Array.isArray(user.roles) && user.roles.length > 0 ? (
+                                            user.roles.map(role => (
+                                                <span
+                                                    key={role}
+                                                    className="inline-flex items-center bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium"
+                                                >
+                                                    {role}
+                                                    {userRole === 'Admin' && (
+                                                        <button
+                                                            className="ml-1 text-xs text-red-500 hover:text-white hover:bg-red-500 rounded-full transition-colors duration-150 w-4 h-4 flex items-center justify-center"
+                                                            onClick={e => { e.stopPropagation(); handleRemoveRole(user.id, role) }}
+                                                            title="Xóa vai trò"
+                                                            style={{ lineHeight: 1 }}
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    )}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-gray-400 italic">Chưa có</span>
+                                        )}
+                                        {userRole === 'Admin' && (
+                                            <select
+                                                className="ml-2 border rounded px-1 py-0.5 text-xs bg-white"
+                                                defaultValue=""
+                                                onClick={e => e.stopPropagation()}
+                                                onChange={e => {
+                                                    if (e.target.value) {
+                                                        handleAddRole(user.id, e.target.value);
+                                                        e.target.value = '';
+                                                    }
+                                                }}
+                                            >
+                                                <option value="" disabled>+ Thêm vai trò</option>
+                                                {ALL_ROLES.filter(r => !user.roles?.includes(r)).map(role => (
+                                                    <option key={role} value={role}>{role}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
+                                </td>
+                                {(userRole !== 'User') && (
+                                    <td className="py-2 px-4 border-b">
+                                        {(userRole === 'Admin' || userRole === 'Manager') && (
+                                            <button
+                                                onClick={e => { e.stopPropagation(); handleEdit(user.id); }}
+                                                className="text-indigo-600 hover:underline mr-2 font-medium"
+                                            >
+                                                Sửa
+                                            </button>
+                                        )}
+                                        {(userRole === 'Admin') && (
+                                            <button
+                                                onClick={e => { e.stopPropagation(); handleDelete(user.id); }}
+                                                className="text-red-600 hover:underline font-medium"
+                                            >
+                                                Xóa
+                                            </button>
+                                        )}
+                                    </td>
+                                )}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            <div className="flex justify-end mt-6 space-x-2">
                 <button
-                    className="px-3 py-1 border rounded disabled:opacity-50"
+                    className="px-4 py-2 border rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold disabled:opacity-50"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                 >
                     Trước
                 </button>
+                <span className="px-3 py-2 text-gray-600 font-medium">
+                    Trang {currentPage} / {totalPages}
+                </span>
                 <button
-                    className="px-3 py-1 border rounded disabled:opacity-50"
+                    className="px-4 py-2 border rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold disabled:opacity-50"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                 >

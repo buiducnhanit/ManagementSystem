@@ -98,3 +98,23 @@ export const changePasswordAsync = async (changePasswordRequest: changePassword)
         throw new Error(error.response?.data?.message);
     }
 }
+
+export const addUserRoleAsync = async (userId: string, roles: string[]) => {
+    try {
+        const response = await api.post(`/auth/add-role`, { userId, roleNames: roles });
+        return response;
+    } catch (error: any) {
+        console.log(error.response?.data)
+        throw error.response?.data;
+    }
+}
+
+export const removeUserRoleAsync = async (userId: string, roles: string[]) => {
+    try {
+        const response = await api.post(`/auth/remove-role`, { userId, roleNames: roles });
+        return response;
+    } catch (error: any) {
+        console.log(error.response?.data)
+        throw error.response?.data;
+    }
+}

@@ -8,5 +8,5 @@ export interface User {
     address: string;
     phoneNumber: string;
     dateOfBirth: string;
-    role: string;
+    roles?: string[];
 }

@@ -42,10 +42,7 @@ const AppRouter: React.FC = () => {
 
             {/* Protected routes */}
             <Route element={<PrivateRoute><UserLayout /></PrivateRoute>}>
-                <Route path='users' element={
-                    <RoleRoute allowedRoles={['Admin', 'User']}>
-                        <UserListPage />
-                    </RoleRoute>} />
+                <Route path='users' element={<UserListPage />}/>
                 <Route path='users/create' element={
                     <RoleRoute allowedRoles={['Admin']}>
                         <CreateUserPage />
@@ -54,14 +51,12 @@ const AppRouter: React.FC = () => {
                     <RoleRoute allowedRoles={['Admin', 'Manager']}>
                         <CreateUserPage />
                     </RoleRoute>} />
-                <Route path='profile' element={<UserProfilePage />} />
+                <Route path='users/:id' element={<UserProfilePage />} />
             </Route>
 
-            <Routes>
-                <Route path='/forbidden' element={<ForbiddenPage />} />
-                <Route path='/unauthorized' element={<UnauthorizedPage />} />
-                <Route path='/*' element={<NotFoundPage />} />
-            </Routes>
+            <Route path='/forbidden' element={<ForbiddenPage />} />
+            <Route path='/unauthorized' element={<UnauthorizedPage />} />
+            <Route path='/*' element={<NotFoundPage />} />
         </Routes>
     )
 }
