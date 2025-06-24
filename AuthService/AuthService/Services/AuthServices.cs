@@ -25,10 +25,11 @@ namespace AuthService.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly PasswordOptions _passwordOptions;
         private readonly ITopicProducer<UserRegisteredEvent> _userRegisteredProducer;
+        private readonly ITopicProducer<UnLockUserEvent> _unLockUserProducer;
 
         public AuthServices(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthServices> logger,
             IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory, IOptions<IdentityOptions> passwordOptions,
-            ITopicProducer<UserRegisteredEvent> userRegisteredProducer)
+            ITopicProducer<UserRegisteredEvent> userRegisteredProducer, ITopicProducer<UnLockUserEvent> unLockUserProducer)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -40,6 +41,7 @@ namespace AuthService.Services
             _httpClientFactory = httpClientFactory;
             _passwordOptions = passwordOptions.Value.Password;
             _userRegisteredProducer = userRegisteredProducer;
+            _unLockUserProducer = unLockUserProducer;
         }
 
         public async Task<string?> RegisterAsync(RegisterDto dto)
@@ -730,6 +732,29 @@ namespace AuthService.Services
                 _logger.Error("An unexpected error occurred while calling UserService for UserId: {UserId}. Rolling back user identity.", ex, null, null, newUser.Id);
                 await _userManager.DeleteAsync(newUser);
                 throw new HandleException($"An unexpected error occurred during user profile creation. User identity rolled back.", (int)HttpStatusCode.InternalServerError);
+            }
+        }
+
+        public async Task<bool> UnLockOutAsync(UnLockOutRequest request)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(request.Id) ?? throw new HandleException("User not found.", StatusCodes.Status404NotFound);
+                user.LockoutEnabled = false;
+                user.LockoutEnd = null;
+                await _userManager.UpdateAsync(user);
+
+                await _unLockUserProducer.Produce(new UnLockUserEvent { Id = request.Id });
+
+                return true;
+            }
+            catch (HandleException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error unlockout for user.", ex);
             }
         }
     }

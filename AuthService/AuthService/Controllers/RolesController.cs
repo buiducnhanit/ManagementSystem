@@ -3,7 +3,9 @@ using AuthService.DTOs;
 using AuthService.Interfaces;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
+using ManagementSystem.Shared.Common.Response;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuthService.Controllers
@@ -76,6 +78,83 @@ namespace AuthService.Controllers
             catch (Exception ex)
             {
                 _logger.Error("An unhandled error occurred while removing roles for user {UserId}", ex, request.UserId);
+                return StatusCode(500, new { message = "Internal server error." });
+            }
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> CreateNewRole([FromBody] CreateRoleRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList();
+                    return BadRequest(ApiResponse<string>.FailureResponse("Invalidation role data.", 400, errors));
+                }
+
+                var role = await _roleService.CreateNewRoleAsync(request);
+                if (role != null)
+                {
+                    return Ok(ApiResponse<IdentityRole<Guid>>.SuccessResponse(role, "Role created successfully."));
+                }
+
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to create role."));
+            }
+            catch (HandleException ex)
+            {
+                return StatusCode(500, new { message = "Internal server error." });
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetAllRoles()
+        {
+            try
+            {
+                var roles = await _roleService.GetAllRolesAsync();
+                if (roles != null)
+                {
+                    return Ok(ApiResponse<IEnumerable<IdentityRole<Guid>>>.SuccessResponse(roles, "Get roles successfully."));
+                }
+
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to get roles."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error." });
+            }
+        }
+
+        [HttpPut]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> UpdateRole([FromForm] UpdateRoleRequest request)
+        {
+            try
+            {
+                var updatedRole = await _roleService.UpdateRoleAsync(request);
+                if (updatedRole != null)
+                {
+                    return Ok(ApiResponse<IdentityRole<Guid>>.SuccessResponse(updatedRole, "Updated role successfully.", StatusCodes.Status200OK));
+                }
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to update role.", StatusCodes.Status400BadRequest));
+            }
+            catch (Exception ex)
+            {
                 return StatusCode(500, new { message = "Internal server error." });
             }
         }

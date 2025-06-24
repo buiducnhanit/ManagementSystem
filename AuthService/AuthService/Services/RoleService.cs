@@ -4,6 +4,7 @@ using AuthService.Interfaces;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 
 namespace AuthService.Services
@@ -89,6 +90,85 @@ namespace AuthService.Services
                 }
             }
             return true;
+        }
+
+        public async Task<IdentityRole<Guid>> CreateNewRoleAsync(CreateRoleRequest request)
+        {
+            try
+            {
+                var role = new IdentityRole<Guid>(request.RoleName);
+                var result = await _roleManager.CreateAsync(role);
+                if (!result.Succeeded)
+                {
+                    _logger.Error("Errors creating {Role}.", propertyValues: request.RoleName);
+                    throw new HandleException("Errors creating {Role}.", StatusCodes.Status400BadRequest, [.. result.Errors.Select(d => d.Description)]);
+                }
+
+                _logger.Info("Creating {Role} role successfully.", propertyValues: request.RoleName);
+                return role;
+            }
+            catch (HandleException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Unexpected error occurred while creating role {RoleId}.", e);
+            }
+        }
+
+        public async Task<IdentityRole<Guid>> UpdateRoleAsync(UpdateRoleRequest request)
+        {
+            try
+            {
+                var role = await _roleManager.FindByNameAsync(request.OldRoleName);
+
+                if (role == null)
+                {
+                    _logger.Warn("Role {RoleId} not found.", propertyValues: request.OldRoleName);
+                    throw new HandleException("Role not found.", StatusCodes.Status404NotFound);
+                }
+
+                role.Name = request.NewRoleName;
+                role.NormalizedName = request.NewRoleName.ToUpperInvariant();
+
+                var result = await _roleManager.UpdateAsync(role);
+
+                if (!result.Succeeded)
+                {
+                    var errorMessages = result.Errors.Select(e => e.Description).ToList();
+                    _logger.Error("Failed to update role {Role}. Errors: {@Errors}", propertyValues: [request.OldRoleName, errorMessages]);
+
+                    throw new HandleException("Failed to update role.", StatusCodes.Status400BadRequest, errorMessages);
+                }
+
+                _logger.Info("Role {Role} updated successfully.", request.OldRoleName);
+                return role;
+            }
+            catch (HandleException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                _logger.Error("Unexpected error occurred while updating role {Role}.", propertyValues: request.OldRoleName);
+                throw new Exception("Errors update role", e);
+            }
+        }
+
+        public async Task<List<IdentityRole<Guid>>> GetAllRolesAsync()
+        {
+            try
+            {
+                var roles = await _roleManager.Roles.ToListAsync();
+                _logger.Info("Retrieved {Count} roles successfully.", roles.Count);
+                return roles;
+            }
+            catch (Exception e)
+            {
+                _logger.Error("Unexpected error occurred while retrieving roles.", e);
+                throw new Exception("Error retrieving roles", e);
+            }
         }
     }
 }

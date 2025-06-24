@@ -21,6 +21,7 @@ namespace AuthService.Interfaces
         Task<bool> ChangePasswordAsync(string userId, ChangePasswordRequest request);
         Task UpdateUserInfoAsync(UpdateAuthEvent request);
         Task<ApplicationUser> CreateUserByAdminAsync(CreateUserByAdminRequest request);
+        Task<bool> UnLockOutAsync(UnLockOutRequest request);
     }
 }
 

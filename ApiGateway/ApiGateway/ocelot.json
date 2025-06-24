@@ -38,6 +38,32 @@
       "Priority": 0
     },
     {
+      "DownstreamPathTemplate": "/api/v1/roles",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "authservice",
+          "Port": 80
+        }
+      ],
+      "UpstreamPathTemplate": "/v1/roles",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/api/v1/roles/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "authservice",
+          "Port": 80
+        }
+      ],
+      "UpstreamPathTemplate": "/v1/roles/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "Priority": 0
+    },
+    {
       "DownstreamPathTemplate": "/api/v1/users/{id}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [

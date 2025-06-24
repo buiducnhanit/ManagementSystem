@@ -123,7 +123,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Admin, User")]
+        [Authorize]
         public async Task<IActionResult> GetAllUsers()
         {
             try

@@ -1,6 +1,7 @@
-﻿using AuthService.DTOs;
+﻿using Asp.Versioning;
+using AuthService.DTOs;
 using AuthService.Interfaces;
-using Asp.Versioning;
+using Mailjet.Client.Resources;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;
@@ -310,6 +311,26 @@ namespace AuthService.Controllers
 
             var newUser = await _authService.CreateUserByAdminAsync(request);
             return Ok(ApiResponse<string>.SuccessResponse("User created successfully user for email: {Email}. Password sent to user email.", newUser.Email!));
+        }
+
+        [HttpPost("unlockout")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UnLockOut([FromBody] UnLockOutRequest request)
+        {
+            try
+            {
+                var response = await _authService.UnLockOutAsync(request);
+                if (response)
+                {
+                    return Ok(ApiResponse<string>.SuccessResponse(null, "Unlock out for user successfully.", StatusCodes.Status200OK));
+                }
+
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to unlock out user.", StatusCodes.Status400BadRequest));
+            }
+            catch (HandleException ex)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse("Unexpected error occurred while unlock out user.", StatusCodes.Status400BadRequest, ex.Errors));
+            }
         }
     }
 }

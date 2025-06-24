@@ -200,5 +200,25 @@ namespace WebAPI.Services
                 throw;
             }
         }
+
+        public async Task<bool> UnLockUserAsync(Guid id)
+        {
+            try
+            {
+                var user = await _userRepository.GetUserByIdAsync(id);
+                if (user == null)
+                {
+                    throw new HandleException("User not found.", StatusCodes.Status404NotFound);
+                }
+
+                user.IsDeleted = false;
+                return true;
+            }
+            catch (HandleException)
+            {
+                throw;
+            }
+            catch (Exception ex) { throw new Exception("Error occurring unlock user."); }
+        }
     }
 }

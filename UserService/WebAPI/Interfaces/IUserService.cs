@@ -9,5 +9,6 @@ namespace WebAPI.Interfaces
         Task<UserProfile> UpdateUserAsync(Guid id, UpdateUserRequest request);
         Task<bool> DeleteUserAsync(Guid id);
         Task<IEnumerable<UserProfile>> GetAllUsersAsync();
+        Task<bool> UnLockUserAsync(Guid id);
     }
 }
