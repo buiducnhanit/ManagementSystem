@@ -55,3 +55,12 @@ export const deleteUserAsync = (id: string) => {
         throw error.response?.data;
     }
 }
+
+export const getAllRolesAsync = () => {
+    try {
+        const response = api.get(`/roles`);
+        return response;
+    } catch (error: any) {
+        throw error.response?.data;
+    }
+}
