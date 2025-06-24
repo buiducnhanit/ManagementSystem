@@ -29,7 +29,7 @@ namespace AuthService.DTOs
         [MaxLength(200)]
         [DataType(DataType.MultilineText)]
         [Display(Name = "Address")]
-        [RegularExpression(@"^[a-zA-Z0-9\s,.'-]{3,}$", ErrorMessage = "Address must be at least 3 characters long and can include letters, numbers, spaces, and certain punctuation marks.")]
+        //[RegularExpression(@"^[a-zA-Z0-9\s,.'-]{3,}$", ErrorMessage = "Address must be at least 3 characters long and can include letters, numbers, spaces, and certain punctuation marks.")]
         public string? Address { get; set; } = null;
 
         [DataType(DataType.Date)]

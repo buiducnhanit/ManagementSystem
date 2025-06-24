@@ -16,12 +16,14 @@ namespace AuthService.Extensions
                
                 x.AddRider(rider =>
                 {
-                    rider.AddProducer<UserRegisteredEvent>("user-topic");
+                    rider.AddProducer<UserRegisteredEvent>("user-registered-topic");
+                    rider.AddProducer<UnLockUserEvent>("user-unclock-topic");
+
                     rider.AddConsumer<UserDeletedConsumer>();
                     rider.UsingKafka((context, cfg) =>
                     {
                         cfg.Host(configuration["Kafka:BootstrapServers"]);
-                        cfg.TopicEndpoint<UserDeletedEvent>("user-topic", nameof(UserDeletedConsumer), e =>
+                        cfg.TopicEndpoint<UserDeletedEvent>("user-deleted-topic", nameof(UserDeletedConsumer), e =>
                         {
                             e.ConfigureConsumer<UserDeletedConsumer>(context);
                         });
