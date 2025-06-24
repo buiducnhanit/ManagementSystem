@@ -31,7 +31,7 @@ export const getUserProfileAsync = () => {
 
 export const createUserAsync = (createUserRequest: UserForm) => {
     try {
-        const response = api.post('/users', createUserRequest);
+        const response = api.post('/auth/create-user', createUserRequest);
         return response;
     } catch (error: any) {
         throw error.response?.data;
