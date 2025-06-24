@@ -2,17 +2,19 @@
 import React, { useEffect, useState } from 'react'
 import type { User } from '../types/User';
 import { useNavigate } from 'react-router-dom';
-import { deleteUserAsync, getAllUsersAsync } from '../services/userService';
+import { deleteUserAsync, getAllRolesAsync, getAllUsersAsync } from '../services/userService';
 import { getUserRole } from '../utils/helper';
 import { addUserRoleAsync, removeUserRoleAsync } from '../services/authService';
+import type { Role } from '../types/Role';
 
 const PAGE_SIZE = 5;
-const ALL_ROLES = ['Admin', 'Manager', 'User'];
+// const ALL_ROLES = ['Admin', 'Manager', 'User'];
 
 const UserListPage: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [roles, setRoles] = useState<Role[]>([]);
     const navigate = useNavigate();
     const userRole = getUserRole();
 
@@ -23,7 +25,17 @@ const UserListPage: React.FC = () => {
                 setUsers(response.data.data);
             }
         };
+
+        const fetchRoles = async () => {
+            const response = await getAllRolesAsync();
+            console.log(response)
+            if (response.data && response.data.data) {
+                setRoles(response.data.data)
+            }
+        }
+
         fetchUsers();
+        fetchRoles();
     }, []);
 
     const handleEdit = (id: string) => {
@@ -169,9 +181,12 @@ const UserListPage: React.FC = () => {
                                                 }}
                                             >
                                                 <option value="" disabled>+ Thêm vai trò</option>
-                                                {ALL_ROLES.filter(r => !user.roles?.includes(r)).map(role => (
-                                                    <option key={role} value={role}>{role}</option>
-                                                ))}
+                                                {roles
+                                                    .map(r => r.name)
+                                                    .filter(roleName => !user.roles?.includes(roleName))
+                                                    .map(roleName => (
+                                                        <option key={roleName} value={roleName}>{roleName}</option>
+                                                    ))}
                                             </select>
                                         )}
                                     </div>
