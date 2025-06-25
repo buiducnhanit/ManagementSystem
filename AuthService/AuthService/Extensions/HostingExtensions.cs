@@ -6,6 +6,7 @@ using AuthService.Repositories;
 using AuthService.Services;
 using ManagementSystem.Shared.Common.DependencyInjection;
 using ManagementSystem.Shared.Common.Logging;
+using MassTransit;
 using Microsoft.AspNetCore.Identity;
 
 namespace AuthService.Extensions
@@ -63,6 +64,8 @@ namespace AuthService.Extensions
                 var services = scope.ServiceProvider;
                 try
                 {
+                    var busControl = services.GetRequiredService<IBusControl>();
+                    await busControl.StartAsync(CancellationToken.None);
                     await SeedData.InitializeAsync(services);
                 }
                 catch (Exception ex)

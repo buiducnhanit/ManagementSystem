@@ -1,6 +1,9 @@
 ﻿using AuthService.Entities;
+using ManagementSystem.Shared.Contracts;
+using MassTransit;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace AuthService.Data
 {
@@ -14,6 +17,7 @@ namespace AuthService.Data
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
                 var dbContext = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<SeedData>>();
+                var createProfileProducer = scope.ServiceProvider.GetRequiredService<ITopicProducer<UserRegisteredEvent>>();
 
                 logger.LogInformation("Starting database seeding...");
 
@@ -30,8 +34,8 @@ namespace AuthService.Data
 
                 await SeedRoles(roleManager, logger);
 
-                await SeedAdminUser(userManager, roleManager, logger);
-                await SeedManagerUser(userManager, roleManager, logger);
+                await SeedAdminUser(userManager, roleManager, logger, createProfileProducer);
+                await SeedManagerUser(userManager, roleManager, logger, createProfileProducer);
 
                 logger.LogInformation("Database seeding completed.");
             }
@@ -64,16 +68,19 @@ namespace AuthService.Data
             }
         }
 
-        private static async Task SeedAdminUser(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ILogger<SeedData> logger)
+        private static async Task SeedAdminUser(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ILogger<SeedData> logger, ITopicProducer<UserRegisteredEvent> createProfileProducer)
         {
             string adminEmail = "admin@fpt.com";
             string adminPassword = "Admin@123";
             string adminRoleName = "Admin";
 
-            if (await userManager.FindByEmailAsync(adminEmail) == null)
+            var adminUser = await userManager.FindByEmailAsync(adminEmail);
+            bool userExits = (adminUser != null);
+
+            if (!userExits)
             {
                 logger.LogInformation("Creating default Admin user...");
-                var adminUser = new ApplicationUser
+                adminUser = new ApplicationUser
                 {
                     UserName = adminEmail,
                     Email = adminEmail,
@@ -111,18 +118,44 @@ namespace AuthService.Data
             {
                 logger.LogInformation("Default Admin user already exists.");
             }
+
+            try
+            {
+                var roles = await userManager.GetRolesAsync(adminUser);
+                await createProfileProducer.Produce(new UserRegisteredEvent
+                {
+                    Id = adminUser.Id,
+                    UserName = adminUser.Email,
+                    Email = adminUser.Email!,
+                    FirstName = "System",
+                    LastName = "Administrator",
+                    PhoneNumber = "N/A",
+                    DateOfBirth = null,
+                    Address = null,
+                    Gender = true,
+                    Roles = [.. roles],
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred while seeding the Admin user.");
+                throw;
+            }
         }
 
-        private static async Task SeedManagerUser(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ILogger<SeedData> logger)
+        private static async Task SeedManagerUser(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ILogger<SeedData> logger, ITopicProducer<UserRegisteredEvent> createProfileProducer)
         {
             string managerEmail = "manager@fpt.com";
             string managerPassword = "Manager@123";
             string managerRoleName = "Manager";
 
-            if (await userManager.FindByEmailAsync(managerEmail) == null)
+            var managerUser = await userManager.FindByEmailAsync(managerEmail);
+            bool userExits = (managerUser != null);
+
+            if (!userExits)
             {
                 logger.LogInformation("Creating default Manager user...");
-                var managerUser = new ApplicationUser
+                managerUser = new ApplicationUser
                 {
                     UserName = managerEmail,
                     Email = managerEmail,
@@ -159,6 +192,29 @@ namespace AuthService.Data
             else
             {
                 logger.LogInformation("Default Manager user already exists.");
+            }
+
+            try
+            {
+                var roles = await userManager.GetRolesAsync(managerUser);
+                await createProfileProducer.Produce(new UserRegisteredEvent
+                {
+                    Id = managerUser.Id,
+                    UserName = managerUser.Email,
+                    Email = managerUser.Email!,
+                    FirstName = "System",
+                    LastName = "Manager",
+                    PhoneNumber = "N/A",
+                    DateOfBirth = null,
+                    Address = null,
+                    Gender = true,
+                    Roles = [.. roles],
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred while seeding the Admin user.");
+                throw;
             }
         }
     }
