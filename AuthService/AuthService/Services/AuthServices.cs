@@ -7,6 +7,7 @@ using ManagementSystem.Shared.Contracts;
 using MassTransit;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using System.Data;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Web;
@@ -622,7 +623,22 @@ namespace AuthService.Services
             }
             _logger.Debug("New user identity {Email} created in AuthService and assigned 'User' role. User ID: {UserId}.", null, null, newUser.Email, newUser.Id.ToString());
 
-            await CallToUserServiceToCreateAccount(newUser, request);
+            //await CallToUserServiceToCreateAccount(newUser, request);
+            var roles = await GetUserRolesAsync(newUser.Id.ToString());
+            await _userRegisteredProducer.Produce(new UserRegisteredEvent
+            {
+                Id = newUser.Id,
+                UserName = newUser.Email,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Email = newUser.Email,
+                Address = request.Address,
+                PhoneNumber = newUser.PhoneNumber,
+                DateOfBirth = request.DateOfBirth,
+                Gender = request.Gender,
+                AvatarUrl = request.AvatarUrl,
+                Roles = roles,
+            });
 
             try
             {
@@ -695,17 +711,16 @@ namespace AuthService.Services
                 var profileRequest = new CreateUserProfileRequest
                 {
                     Id = newUser.Id,
-                    UserName = request.UserName,
+                    UserName = newUser.Email,
                     FirstName = request.FirstName,
                     LastName = request.LastName,
-                    Email = newUser.Email!,
+                    Email = newUser.Email,
                     Address = request.Address,
-                    PhoneNumber = newUser.PhoneNumber!,
+                    PhoneNumber = newUser.PhoneNumber,
                     DateOfBirth = request.DateOfBirth,
                     Gender = request.Gender,
                     AvatarUrl = request.AvatarUrl,
                     Roles = roles,
-
                 };
 
                 var response = await httpClient.PostAsJsonAsync("api/v1/users", profileRequest);

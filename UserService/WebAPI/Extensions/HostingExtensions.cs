@@ -1,5 +1,7 @@
 ﻿using Asp.Versioning.ApiExplorer;
 using ManagementSystem.Shared.Common.DependencyInjection;
+using ManagementSystem.Shared.Common.Logging;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using WebAPI.Data;
 using WebAPI.Interfaces;
@@ -32,14 +34,24 @@ namespace WebAPI.Extensions
             return builder;
         }
 
-        public static WebApplication ConfigureMiddlewares(this WebApplication app)
+        public async static Task<WebApplication> ConfigureMiddlewares(this WebApplication app)
         {
             var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
 
             using (var scope = app.Services.CreateScope())
             {
-                var db = scope.ServiceProvider.GetRequiredService<UserDbContext>();
-                db.Database.Migrate();
+                var services = scope.ServiceProvider;
+                try
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+                    db.Database.Migrate();
+                }
+                catch (Exception ex)
+                {
+                    var logger = services.GetRequiredService<ICustomLogger<Program>>();
+                    logger.Error("An error occurred while configuring the application.", ex);
+                    throw;
+                }
             }
 
             if (app.Environment.IsDevelopment())

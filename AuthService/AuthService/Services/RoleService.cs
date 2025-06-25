@@ -3,6 +3,8 @@ using AuthService.Entities;
 using AuthService.Interfaces;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
+using ManagementSystem.Shared.Contracts;
+using MassTransit;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
@@ -14,12 +16,14 @@ namespace AuthService.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly ICustomLogger<AuthServices> _logger;
+        private readonly ITopicProducer<UpdateUserProfileEvent> _producer;
 
-        public RoleService(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ICustomLogger<AuthServices> logger)
+        public RoleService(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ICustomLogger<AuthServices> logger, ITopicProducer<UpdateUserProfileEvent> producer)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _logger = logger;
+            _producer = producer;
         }
 
         public async Task<bool> AddUserRolesAsync(ManageUserRolesRequest request)
@@ -54,6 +58,16 @@ namespace AuthService.Services
                     _logger.Info("User {UserId} is already in role {RoleName}.", request.UserId, roleName);
                 }
             }
+
+            // Publish an event to update user profile
+            var roles = await _userManager.GetRolesAsync(user);
+            var updateEvent = new UpdateUserProfileEvent
+            {
+                Id = request.UserId.ToString(),
+                Roles = [..roles]
+            };
+            await _producer.Produce(updateEvent);
+
             return true;
         }
 
@@ -89,6 +103,14 @@ namespace AuthService.Services
                     _logger.Info("User {UserId} is not in role {RoleName}.", request.UserId, roleName);
                 }
             }
+            // Publish an event to update user profile
+            var roles = await _userManager.GetRolesAsync(user);
+            var updateEvent = new UpdateUserProfileEvent
+            {
+                Id = request.UserId.ToString(),
+                Roles = [.. roles]
+            };
+            await _producer.Produce(updateEvent);
             return true;
         }
 

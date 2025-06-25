@@ -18,6 +18,7 @@ namespace AuthService.Extensions
                 {
                     rider.AddProducer<UserRegisteredEvent>("user-registered-topic");
                     rider.AddProducer<UnLockUserEvent>("user-unclock-topic");
+                    rider.AddProducer<UpdateUserProfileEvent>("user-update-topic");
 
                     rider.AddConsumer<UserDeletedConsumer>();
                     rider.UsingKafka((context, cfg) =>

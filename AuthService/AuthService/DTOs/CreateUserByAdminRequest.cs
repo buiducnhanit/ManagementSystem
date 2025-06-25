@@ -4,9 +4,9 @@ namespace AuthService.DTOs
 {
     public class CreateUserByAdminRequest
     {
-        [Required(ErrorMessage = "Username is required.")]
-        [MinLength(3)]
-        public string UserName { get; set; } = string.Empty;
+        //[Required(ErrorMessage = "Username is required.")]
+        //[MinLength(3)]
+        //public string UserName { get; set; } = string.Empty;
 
         [MinLength(3)]
         public string? FirstName { get; set; } = null;

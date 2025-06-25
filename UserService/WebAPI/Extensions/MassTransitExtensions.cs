@@ -12,6 +12,7 @@ namespace WebAPI.Extensions
             {
                 x.AddConsumer<UserRegisteredConsumer>();
                 x.AddConsumer<UnLockUserConsumer>();
+                x.AddConsumer<UpdateUserProfileConsumer>();
 
                 x.UsingInMemory();
 
@@ -21,6 +22,7 @@ namespace WebAPI.Extensions
 
                     rider.AddConsumer<UserRegisteredConsumer>();
                     rider.AddConsumer<UnLockUserConsumer>();
+                    rider.AddConsumer<UpdateUserProfileConsumer>();
 
                     rider.UsingKafka((context, cfg) =>
                     {
@@ -33,6 +35,10 @@ namespace WebAPI.Extensions
                         cfg.TopicEndpoint<UnLockUserEvent>("user-unclock-topic", nameof(UnLockUserConsumer), e =>
                         {
                             e.ConfigureConsumer<UnLockUserConsumer>(context);
+                        });
+                        cfg.TopicEndpoint<UpdateUserProfileEvent>("user-update-topic", nameof(UpdateUserProfileConsumer), e =>
+                        {
+                            e.ConfigureConsumer<UpdateUserProfileConsumer>(context);
                         });
                     });
                 });
