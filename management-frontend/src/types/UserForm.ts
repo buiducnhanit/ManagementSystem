@@ -1,5 +1,5 @@
 export interface UserForm {
-    userName: string;
+    // userName: string;
     email: string;
     firstName: string;
     lastName: string;
@@ -8,4 +8,5 @@ export interface UserForm {
     phoneNumber: string;
     dateOfBirth: string;
     gender: boolean;
+    roles: string[]; 
 }

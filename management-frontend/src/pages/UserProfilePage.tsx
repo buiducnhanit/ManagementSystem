@@ -20,33 +20,43 @@ const UserProfilePage: React.FC = () => {
         return <div className="text-center py-10">Đang tải thông tin người dùng...</div>;
     }
 
-    // Giả lập các thuộc tính bổ sung nếu chưa có từ backend
-    const gender = user.gender || 'Nam';
-    const createdAt = user.createdAt || '2024-01-01T12:00:00';
-    const status = user.isActive === false ? 'Đã khóa' : 'Đang hoạt động';
-    const bio = user.bio || 'Chưa có mô tả';
+    const gender = user.gender === true ? 'Nam' : user.gender === false ? 'Nữ' : 'Không xác định';
+    const createdAt = user.createdAt ? user.createdAt.split('T')[0] : 'Không rõ';
+    const dateOfBirth = user.dateOfBirth ? user.dateOfBirth.split('T')[0] : 'Không rõ';
+    const status = user.isDeleted ? 'Đã khóa' : 'Đang hoạt động';
+    const avatar = user.avatarUrl;
+    const address = user.address || 'Chưa cập nhật';
+    const phoneNumber = user.phoneNumber || 'Chưa cập nhật';
+    const roles = Array.isArray(user.roles) && user.roles.length > 0 ? user.roles : ['Chưa có'];
+
+    const getInitial = () => {
+        if (user.userName && typeof user.userName === 'string') {
+            return user.userName.trim().charAt(0).toUpperCase();
+        }
+        if (user.email && typeof user.email === 'string') {
+            return user.email.trim().charAt(0).toUpperCase();
+        }
+        return '?';
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br py-10 px-2">
             <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
                 <div className="flex flex-col items-center gap-4 mb-8">
                     <div className="w-28 h-28 rounded-full bg-indigo-100 flex items-center justify-center text-5xl font-bold text-indigo-600 shadow">
-                        {user.avatarUrl
-                            ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full rounded-full object-cover" />
+                        {avatar
+                            ? <img src={avatar} alt="avatar" className="w-full h-full rounded-full object-cover" />
                             : (
-                                <svg className="w-16 h-16 text-indigo-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 12c2.7 0 4.5-2.2 4.5-4.5S14.7 3 12 3 7.5 5.2 7.5 7.5 9.3 12 12 12zm0 2c-3 0-9 1.5-9 4.5V21h18v-2.5c0-3-6-4.5-9-4.5z" />
-                                </svg>
+                                <span>{getInitial()}</span>
                             )
                         }
                     </div>
                     <h2 className="text-3xl font-extrabold text-indigo-700">{user.firstName} {user.lastName}</h2>
                     <div className="flex gap-2 flex-wrap">
-                        {user.roles?.map((role: string) => (
+                        {roles.map((role: string) => (
                             <span key={role} className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold shadow">{role}</span>
                         ))}
                     </div>
-                    <div className="text-gray-500 italic mt-2">{bio}</div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
@@ -60,7 +70,7 @@ const UserProfilePage: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="font-semibold text-gray-600">Số điện thoại:</span>
-                            <span className="ml-1">{user.phoneNumber}</span>
+                            <span className="ml-1">{phoneNumber}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="font-semibold text-gray-600">Giới tính:</span>
@@ -70,15 +80,15 @@ const UserProfilePage: React.FC = () => {
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
                             <span className="font-semibold text-gray-600">Địa chỉ:</span>
-                            <span className="ml-1">{user.address}</span>
+                            <span className="ml-1">{address}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="font-semibold text-gray-600">Ngày sinh:</span>
-                            <span className="ml-1">{user.dateOfBirth?.split('T')[0]}</span>
+                            <span className="ml-1">{dateOfBirth}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="font-semibold text-gray-600">Ngày tạo:</span>
-                            <span className="ml-1">{createdAt?.split('T')[0]}</span>
+                            <span className="ml-1">{createdAt}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="font-semibold text-gray-600">Trạng thái:</span>

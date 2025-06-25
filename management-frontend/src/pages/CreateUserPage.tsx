@@ -7,14 +7,15 @@ import type { UserForm } from '../types/UserForm';
 const CreateUserPage: React.FC = () => {
     const { id } = useParams<{ id?: string }>();
     const [formData, setFormData] = useState<UserForm>({
-        userName: '',
+        // userName: '',
         email: '',
         firstName: '',
         lastName: '',
         address: '',
         phoneNumber: '',
         dateOfBirth: new Date().toISOString().split('T')[0],
-        gender: true
+        gender: true,
+        roles: []
     });
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const navigate = useNavigate();
@@ -29,7 +30,7 @@ const CreateUserPage: React.FC = () => {
                     const response = await getUserByIdAsync(id);
                     const user = response.data.data;
                     setFormData({
-                        userName: user.userName || '',
+                        // userName: user.userName || '',
                         email: user.email || '',
                         firstName: user.firstName || '',
                         lastName: user.lastName || '',
@@ -40,7 +41,8 @@ const CreateUserPage: React.FC = () => {
                             : new Date().toISOString().split('T')[0],
                         gender: typeof user.gender === 'boolean'
                             ? user.gender
-                            : user.gender === 'true'
+                            : user.gender === 'true',
+                        roles: user.roles
                     });
                 } catch (error: any) {
                     setErrors({ general: 'Không thể tải thông tin người dùng.' })
@@ -93,7 +95,7 @@ const CreateUserPage: React.FC = () => {
             <h2 className="text-2xl font-bold mb-4">Tạo người dùng mới</h2>
             {errors.general && <div className="text-red-500 mb-4">{errors.general}</div>}
             <form onSubmit={handleSubmit} className="max-w-md">
-                <div className="mb-4">
+               {/* <div className="mb-4">
                     <label htmlFor="userName" className="block text-gray-700 text-sm font-bold mb-2">
                         Username:
                     </label>
@@ -106,7 +108,7 @@ const CreateUserPage: React.FC = () => {
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     />
                     {errors.userName && <p className="text-red-500 text-xs italic">{errors.userName}</p>}
-                </div>
+                </div> */}
                 <div className="mb-4">
                     <label htmlFor="Email" className="block text-gray-700 text-sm font-bold mb-2">
                         Email:
@@ -221,22 +223,23 @@ const CreateUserPage: React.FC = () => {
                     </div>
                     {errors.gender && <p className="text-red-500 text-xs italic">{errors.gender}</p>}
                 </div>
-                {/* <div className="mb-4">
+                <div className="mb-4 hidden">
                     <label htmlFor="role" className="block text-gray-700 text-sm font-bold mb-2">
                         Vai trò:
                     </label>
                     <select
-                        id="role"
-                        name="role"
-                        value={formData.role}
-                        onChange={handleChange}
+                        id="roles"
+                        name="roles"
+                        value={formData.roles && formData.roles.length > 0 ? formData.roles[0] : ''}
+                        onChange={e => setFormData({ ...formData, roles: [e.target.value] })}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     >
+                        <option value="">Chọn vai trò</option>
                         <option value="User">Người dùng</option>
                         <option value="Admin">Quản trị viên</option>
                     </select>
-                    {errors.role && <p className="text-red-500 text-xs italic">{errors.role}</p>}
-                </div> */}
+                    {errors.roles && <p className="text-red-500 text-xs italic">{errors.roles}</p>}
+                </div>
                 <div className="flex items-center justify-between">
                     <button
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"

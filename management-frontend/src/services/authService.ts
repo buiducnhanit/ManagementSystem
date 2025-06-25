@@ -101,7 +101,7 @@ export const changePasswordAsync = async (changePasswordRequest: changePassword)
 
 export const addUserRoleAsync = async (userId: string, roles: string[]) => {
     try {
-        const response = await api.post(`/roles/remove-roles`, { userId, roleNames: roles });
+        const response = await api.post(`/roles/add-roles`, { userId, roleNames: roles });
         return response;
     } catch (error: any) {
         console.log(error.response?.data)

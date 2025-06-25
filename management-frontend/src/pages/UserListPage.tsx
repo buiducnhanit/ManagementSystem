@@ -28,7 +28,7 @@ const UserListPage: React.FC = () => {
 
         const fetchRoles = async () => {
             const response = await getAllRolesAsync();
-            console.log(response)
+            // console.log(response)
             if (response.data && response.data.data) {
                 setRoles(response.data.data)
             }
@@ -126,9 +126,6 @@ const UserListPage: React.FC = () => {
                             <th className="py-3 px-4 border-b font-semibold text-gray-700">Tên đăng nhập</th>
                             <th className="py-3 px-4 border-b font-semibold text-gray-700">Họ tên</th>
                             <th className="py-3 px-4 border-b font-semibold text-gray-700">Email</th>
-                            <th className="py-3 px-4 border-b font-semibold text-gray-700">Số điện thoại</th>
-                            <th className="py-3 px-4 border-b font-semibold text-gray-700">Địa chỉ</th>
-                            <th className="py-3 px-4 border-b font-semibold text-gray-700">Ngày sinh</th>
                             <th className="py-3 px-4 border-b font-semibold text-gray-700">Vai trò</th>
                             {(userRole !== 'User') && (
                                 <th className="py-3 px-4 border-b font-semibold text-gray-700">Thao tác</th>
@@ -141,9 +138,6 @@ const UserListPage: React.FC = () => {
                                 <td className="py-2 px-4 border-b">{user.userName}</td>
                                 <td className="py-2 px-4 border-b">{user.firstName} {user.lastName}</td>
                                 <td className="py-2 px-4 border-b">{user.email}</td>
-                                <td className="py-2 px-4 border-b">{user.phoneNumber}</td>
-                                <td className="py-2 px-4 border-b">{user.address}</td>
-                                <td className="py-2 px-4 border-b">{user.dateOfBirth?.split('T')[0]}</td>
                                 <td className="py-2 px-4 border-b">
                                     <div className="flex flex-wrap items-center gap-2">
                                         {Array.isArray(user.roles) && user.roles.length > 0 ? (
