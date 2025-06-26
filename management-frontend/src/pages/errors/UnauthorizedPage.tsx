@@ -2,10 +2,21 @@ import React from 'react'
 
 const UnauthorizedPage: React.FC = () => {
     return (
-        <div className="flex flex-col items-center justify-center h-screen">
-            <h1 className="text-5xl font-bold mb-4">401</h1>
-            <p className="text-xl mb-2">Bạn chưa đăng nhập.</p>
-            <a href="/login" className="text-blue-600 underline">Đăng nhập</a>
+        <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-yellow-50 to-white">
+            <div className="bg-white rounded-2xl shadow-xl p-10 flex flex-col items-center">
+                <svg className="w-20 h-20 text-yellow-400 mb-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01" />
+                </svg>
+                <h1 className="text-5xl font-extrabold text-yellow-500 mb-2">401</h1>
+                <p className="text-xl mb-4 text-gray-700">Bạn chưa đăng nhập.</p>
+                <a
+                    href="/login"
+                    className="px-6 py-2 bg-yellow-400 text-white rounded-lg font-semibold shadow hover:bg-yellow-500 transition"
+                >
+                    Đăng nhập
+                </a>
+            </div>
         </div>
     )
 }

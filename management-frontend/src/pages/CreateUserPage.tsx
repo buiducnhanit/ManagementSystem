@@ -7,7 +7,6 @@ import type { UserForm } from '../types/UserForm';
 const CreateUserPage: React.FC = () => {
     const { id } = useParams<{ id?: string }>();
     const [formData, setFormData] = useState<UserForm>({
-        // userName: '',
         email: '',
         firstName: '',
         lastName: '',
@@ -30,7 +29,6 @@ const CreateUserPage: React.FC = () => {
                     const response = await getUserByIdAsync(id);
                     const user = response.data.data;
                     setFormData({
-                        // userName: user.userName || '',
                         email: user.email || '',
                         firstName: user.firstName || '',
                         lastName: user.lastName || '',
@@ -67,7 +65,7 @@ const CreateUserPage: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log(formData)
+        setErrors({});
         try {
             if (isEditMode) {
                 await updateUserAsync(id, formData);
@@ -87,175 +85,154 @@ const CreateUserPage: React.FC = () => {
     }
 
     if (loading) {
-        return <div>Đang tải thông tin người dùng...</div>;
+        return <div className="text-center py-10 text-lg">Đang tải thông tin người dùng...</div>;
     }
 
     return (
-        <div>
-            <h2 className="text-2xl font-bold mb-4">Tạo người dùng mới</h2>
-            {errors.general && <div className="text-red-500 mb-4">{errors.general}</div>}
-            <form onSubmit={handleSubmit} className="max-w-md">
-               {/* <div className="mb-4">
-                    <label htmlFor="userName" className="block text-gray-700 text-sm font-bold mb-2">
-                        Username:
-                    </label>
-                    <input
-                        type="text"
-                        id="userName"
-                        name="userName"
-                        value={formData.userName}
-                        onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
-                    {errors.userName && <p className="text-red-500 text-xs italic">{errors.userName}</p>}
-                </div> */}
-                <div className="mb-4">
-                    <label htmlFor="Email" className="block text-gray-700 text-sm font-bold mb-2">
-                        Email:
-                    </label>
-                    <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
-                    {errors.email && <p className="text-red-500 text-xs italic">{errors.email}</p>}
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="firstName" className="block text-gray-700 text-sm font-bold mb-2">
-                        First name:
-                    </label>
-                    <input
-                        type="text"
-                        id="firstName"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
-                    {errors.firstName && <p className="text-red-500 text-xs italic">{errors.firstName}</p>}
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="lastName" className="block text-gray-700 text-sm font-bold mb-2">
-                        Last name:
-                    </label>
-                    <input
-                        type="text"
-                        id="lastName"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
-                    {errors.lastName && <p className="text-red-500 text-xs italic">{errors.lastName}</p>}
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="address" className="block text-gray-700 text-sm font-bold mb-2">
-                        Address:
-                    </label>
-                    <input
-                        type="text"
-                        id="address"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
-                    {errors.address && <p className="text-red-500 text-xs italic">{errors.address}</p>}
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="phoneNumber" className="block text-gray-700 text-sm font-bold mb-2">
-                        Phone number:
-                    </label>
-                    <input
-                        type="tel"
-                        id="phoneNumber"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
-                    {errors.phoneNumber && <p className="text-red-500 text-xs italic">{errors.phoneNumber}</p>}
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="dateOfBirth" className="block text-gray-700 text-sm font-bold mb-2">
-                        Date of birth:
-                    </label>
-                    <input
-                        type="date"
-                        id="dateOfBirth"
-                        name="dateOfBirth"
-                        value={formData.dateOfBirth}
-                        onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
-                    {errors.dateOfBirth && <p className="text-red-500 text-xs italic">{errors.dateOfBirth}</p>}
-                </div>
-                <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">
-                        Gender:
-                    </label>
-                    <div className="flex items-center space-x-4">
-                        <label className="inline-flex items-center">
-                            <input
-                                type="radio"
-                                name="gender"
-                                value="true"
-                                checked={formData.gender === true}
-                                onChange={() => setFormData({ ...formData, gender: true })}
-                                className="form-radio"
-                            />
-                            <span className="ml-2">Male</span>
-                        </label>
-                        <label className="inline-flex items-center">
-                            <input
-                                type="radio"
-                                name="gender"
-                                value="false"
-                                checked={formData.gender === false}
-                                onChange={() => setFormData({ ...formData, gender: false })}
-                                className="form-radio"
-                            />
-                            <span className="ml-2">Female</span>
-                        </label>
+        <div className="flex items-center justify-center bg-gray-100 py-8 px-2">
+            <div className="bg-white p-8 rounded-xl shadow-xl w-full max-w-2xl">
+                <h2 className="text-2xl font-bold mb-6 text-indigo-700 text-center">
+                    {isEditMode ? 'Cập nhật người dùng' : 'Tạo người dùng mới'}
+                </h2>
+                {errors.general && <div className="text-red-500 mb-4 text-center">{errors.general}</div>}
+                <form onSubmit={handleSubmit}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    id="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                />
+                                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                            </div>
+                            <div>
+                                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                                    Họ
+                                </label>
+                                <input
+                                    type="text"
+                                    id="firstName"
+                                    name="firstName"
+                                    value={formData.firstName}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                />
+                                {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
+                            </div>
+                            <div>
+                                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                                    Tên
+                                </label>
+                                <input
+                                    type="text"
+                                    id="lastName"
+                                    name="lastName"
+                                    value={formData.lastName}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                />
+                                {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
+                            </div>
+                            <div>
+                                <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                                    Địa chỉ
+                                </label>
+                                <input
+                                    type="text"
+                                    id="address"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                />
+                                {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                                    Số điện thoại
+                                </label>
+                                <input
+                                    type="tel"
+                                    id="phoneNumber"
+                                    name="phoneNumber"
+                                    value={formData.phoneNumber}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                />
+                                {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>}
+                            </div>
+                            <div>
+                                <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">
+                                    Ngày sinh
+                                </label>
+                                <input
+                                    type="date"
+                                    id="dateOfBirth"
+                                    name="dateOfBirth"
+                                    value={formData.dateOfBirth}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                />
+                                {errors.dateOfBirth && <p className="text-red-500 text-xs mt-1">{errors.dateOfBirth}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Giới tính
+                                </label>
+                                <div className="flex items-center gap-6">
+                                    <label className="inline-flex items-center">
+                                        <input
+                                            type="radio"
+                                            name="gender"
+                                            value="true"
+                                            checked={formData.gender === true}
+                                            onChange={() => setFormData({ ...formData, gender: true })}
+                                            className="form-radio text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="ml-2">Nam</span>
+                                    </label>
+                                    <label className="inline-flex items-center">
+                                        <input
+                                            type="radio"
+                                            name="gender"
+                                            value="false"
+                                            checked={formData.gender === false}
+                                            onChange={() => setFormData({ ...formData, gender: false })}
+                                            className="form-radio text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="ml-2">Nữ</span>
+                                    </label>
+                                </div>
+                                {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
+                            </div>
+                        </div>
                     </div>
-                    {errors.gender && <p className="text-red-500 text-xs italic">{errors.gender}</p>}
-                </div>
-                <div className="mb-4 hidden">
-                    <label htmlFor="role" className="block text-gray-700 text-sm font-bold mb-2">
-                        Vai trò:
-                    </label>
-                    <select
-                        id="roles"
-                        name="roles"
-                        value={formData.roles && formData.roles.length > 0 ? formData.roles[0] : ''}
-                        onChange={e => setFormData({ ...formData, roles: [e.target.value] })}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    >
-                        <option value="">Chọn vai trò</option>
-                        <option value="User">Người dùng</option>
-                        <option value="Admin">Quản trị viên</option>
-                    </select>
-                    {errors.roles && <p className="text-red-500 text-xs italic">{errors.roles}</p>}
-                </div>
-                <div className="flex items-center justify-between">
-                    <button
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                        type="submit"
-                    >
-                        {isEditMode ? 'Cập nhật người dùng' : 'Tạo người dùng'}
-                    </button>
-                    <button
-                        className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                        type="button"
-                        onClick={() => navigate('/users')}
-                    >
-                        Hủy
-                    </button>
-                </div>
-            </form>
+                    <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <button
+                            className="w-full md:w-auto flex justify-center py-2 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            type="submit"
+                        >
+                            {isEditMode ? 'Cập nhật người dùng' : 'Tạo người dùng'}
+                        </button>
+                        <button
+                            type="button"
+                            className="w-full md:w-auto flex justify-center py-2 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-500 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                            onClick={() => navigate('/users')}
+                        >
+                            Hủy
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     )
 }

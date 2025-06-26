@@ -15,6 +15,7 @@ const UserListPage: React.FC = () => {
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [roles, setRoles] = useState<Role[]>([]);
+    const [openRoleDropdown, setOpenRoleDropdown] = useState<string | null>(null);
     const navigate = useNavigate();
     const userRole = getUserRole();
 
@@ -149,12 +150,14 @@ const UserListPage: React.FC = () => {
                                                     {role}
                                                     {userRole === 'Admin' && (
                                                         <button
-                                                            className="ml-1 text-xs text-red-500 hover:text-white hover:bg-red-500 rounded-full transition-colors duration-150 w-4 h-4 flex items-center justify-center"
+                                                            className="ml-1 w-5 h-5 flex items-center justify-center rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition"
                                                             onClick={e => { e.stopPropagation(); handleRemoveRole(user.id, role) }}
                                                             title="Xóa vai trò"
                                                             style={{ lineHeight: 1 }}
                                                         >
-                                                            ×
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
                                                         </button>
                                                     )}
                                                 </span>
@@ -162,27 +165,47 @@ const UserListPage: React.FC = () => {
                                         ) : (
                                             <span className="text-gray-400 italic">Chưa có</span>
                                         )}
-                                        {userRole === 'Admin' && (
-                                            <select
-                                                className="ml-2 border rounded px-1 py-0.5 text-xs bg-white"
-                                                defaultValue=""
-                                                onClick={e => e.stopPropagation()}
-                                                onChange={e => {
-                                                    if (e.target.value) {
-                                                        handleAddRole(user.id, e.target.value);
-                                                        e.target.value = '';
-                                                    }
-                                                }}
-                                            >
-                                                <option value="" disabled>+ Thêm vai trò</option>
-                                                {roles
-                                                    .map(r => r.name)
-                                                    .filter(roleName => !user.roles?.includes(roleName))
-                                                    .map(roleName => (
-                                                        <option key={roleName} value={roleName}>{roleName}</option>
-                                                    ))}
-                                            </select>
-                                        )}
+                                        {userRole === 'Admin' && roles
+                                            .map(r => r.name)
+                                            .filter(roleName => !user.roles?.includes(roleName)).length > 0 && (
+                                                <div className="relative">
+                                                    <button
+                                                        className="ml-1 w-6 h-6 flex items-center justify-center rounded-full bg-green-100 text-green-700 hover:bg-green-600 hover:text-white transition"
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            setOpenRoleDropdown(openRoleDropdown === user.id ? null : user.id);
+                                                        }}
+                                                        title="Thêm vai trò"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                                        </svg>
+                                                    </button>
+                                                    {openRoleDropdown === user.id && (
+                                                        <div
+                                                            className="absolute left-0 mt-2 z-10 bg-white border rounded shadow-lg min-w-[120px]"
+                                                            onClick={e => e.stopPropagation()}
+                                                        >
+                                                            {roles
+                                                                .map(r => r.name)
+                                                                .filter(roleName => !user.roles?.includes(roleName))
+                                                                .map(roleName => (
+                                                                    <button
+                                                                        key={roleName}
+                                                                        className="block w-full text-left px-4 py-2 text-xs hover:bg-green-100 transition"
+                                                                        onClick={e => {
+                                                                            e.stopPropagation();
+                                                                            handleAddRole(user.id, roleName);
+                                                                            setOpenRoleDropdown(null);
+                                                                        }}
+                                                                    >
+                                                                        {roleName}
+                                                                    </button>
+                                                                ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                     </div>
                                 </td>
                                 {(userRole !== 'User') && (
@@ -190,16 +213,22 @@ const UserListPage: React.FC = () => {
                                         {(userRole === 'Admin' || userRole === 'Manager') && (
                                             <button
                                                 onClick={e => { e.stopPropagation(); handleEdit(user.id); }}
-                                                className="text-indigo-600 hover:underline mr-2 font-medium"
+                                                className="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-600 hover:text-white transition font-medium mr-2"
                                             >
+                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6 6M3 17v4h4l10.293-10.293a1 1 0 000-1.414l-3.586-3.586a1 1 0 00-1.414 0L3 17z" />
+                                                </svg>
                                                 Sửa
                                             </button>
                                         )}
                                         {(userRole === 'Admin') && (
                                             <button
                                                 onClick={e => { e.stopPropagation(); handleDelete(user.id); }}
-                                                className="text-red-600 hover:underline font-medium"
+                                                className="inline-flex items-center px-3 py-1 bg-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition font-medium"
                                             >
+                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
                                                 Xóa
                                             </button>
                                         )}

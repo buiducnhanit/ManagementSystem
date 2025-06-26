@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { logoutAsync } from '../services/authService'
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 
@@ -46,45 +46,45 @@ const Header: React.FC<HeaderProps> = ({ avatar, userName }) => {
     };
 
     return (
-        <header className="bg-white shadow px-6 py-4 flex items-center justify-between">
-            <div className="text-xl font-bold text-indigo-700">Quản lý người dùng</div>
+        <header className="bg-white shadow px-8 py-5 flex items-center justify-between">
+            <div className="text-2xl font-extrabold text-indigo-700 tracking-wide">Quản lý người dùng</div>
             <div className="flex items-center space-x-4">
                 <div className="relative" ref={dropdownRef}>
                     <button
-                        className="flex items-center space-x-2 focus:outline-none"
+                        className="flex items-center space-x-2 focus:outline-none hover:ring-2 hover:ring-indigo-200 rounded-full transition"
                         onClick={() => setOpen((prev) => !prev)}
                     >
                         {avatar ? (
                             <img
                                 src={avatar}
                                 alt="avatar"
-                                className="w-9 h-9 rounded-full object-cover border"
+                                className="w-10 h-10 rounded-full object-cover border-2 border-indigo-200"
                             />
                         ) : (
-                            <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xl border-2 border-indigo-200">
                                 {getInitial()}
                             </div>
                         )}
                     </button>
                     {open && (
-                        <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow z-10">
+                        <div className="absolute right-0 mt-2 w-48 bg-white border rounded-xl shadow-lg z-10 overflow-hidden">
                             <Link
                                 to="/forgot-password"
-                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                className="block px-5 py-3 text-sm text-gray-700 hover:bg-indigo-50"
                                 onClick={() => setOpen(false)}
                             >
                                 Quên mật khẩu
                             </Link>
                             <Link
                                 to="/change-password"
-                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                className="block px-5 py-3 text-sm text-gray-700 hover:bg-indigo-50"
                                 onClick={() => setOpen(false)}
                             >
                                 Đổi mật khẩu
                             </Link>
                             <button
                                 onClick={handleLogout}
-                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                className="w-full text-left px-5 py-3 text-sm text-red-600 hover:bg-red-50"
                             >
                                 Đăng xuất
                             </button>
