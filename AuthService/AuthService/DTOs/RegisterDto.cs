@@ -4,9 +4,9 @@ namespace AuthService.DTOs
 {
     public class RegisterDto
     {
-        [Required(ErrorMessage = "Username is required.")]
-        [MinLength(3)]
-        public string UserName { get; set; } = string.Empty;
+        //[Required(ErrorMessage = "Username is required.")]
+        //[MinLength(3)]
+        //public string UserName { get; set; } = string.Empty;
 
         [MinLength(3)]
         public string? FirstName { get; set; } = null;
@@ -36,7 +36,7 @@ namespace AuthService.DTOs
         [MaxLength(200)]
         [DataType(DataType.MultilineText)]
         [Display(Name = "Address")]
-        [RegularExpression(@"^[a-zA-Z0-9\s,.'-]{3,}$", ErrorMessage = "Address must be at least 3 characters long and can include letters, numbers, spaces, and certain punctuation marks.")]
+        //[RegularExpression(@"^[a-zA-Z0-9\s,.'-]{3,}$", ErrorMessage = "Address must be at least 3 characters long and can include letters, numbers, spaces, and certain punctuation marks.")]
         public string? Address { get; set; } = null;
 
         [DataType(DataType.Date)]

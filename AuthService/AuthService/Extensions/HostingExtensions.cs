@@ -2,6 +2,7 @@
 using AuthService.Configure;
 using AuthService.Data;
 using AuthService.Interfaces;
+using AuthService.Middleware;
 using AuthService.Repositories;
 using AuthService.Services;
 using ManagementSystem.Shared.Common.DependencyInjection;
@@ -89,6 +90,7 @@ namespace AuthService.Extensions
             app.MapControllers();
 
             app.UseSharedPolicies();
+            app.UseMiddleware<SessionValidationMiddleware>();
 
             return app;
         }

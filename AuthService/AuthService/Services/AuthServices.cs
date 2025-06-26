@@ -50,15 +50,9 @@ namespace AuthService.Services
             ApplicationUser? user = null;
             try
             {
-                var existingUser = await _userManager.FindByNameAsync(dto.UserName) ?? await _userManager.FindByEmailAsync(dto.Email);
-                if (existingUser != null)
-                {
-                    throw new HandleException("Email is already registered.", 400);
-                }
-
                 user = new ApplicationUser
                 {
-                    UserName = dto.UserName,
+                    UserName = dto.Email,
                     Email = dto.Email,
                     PhoneNumber = dto.PhoneNumber,
                 };

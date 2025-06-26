@@ -12,6 +12,7 @@ namespace WebAPI.Configure
             CreateMap<User, UserProfile>();
             CreateMap<UpdateUserRequest, User>();
             CreateMap<UserRegisteredEvent, CreateUserRequest>();
+            CreateMap<UpdateUserProfileEvent, UpdateUserRequest>();
         }
     }
 }
