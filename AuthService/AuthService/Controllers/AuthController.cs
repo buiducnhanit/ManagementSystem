@@ -1,7 +1,6 @@
 ﻿using Asp.Versioning;
 using AuthService.DTOs;
 using AuthService.Interfaces;
-using Mailjet.Client.Resources;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;
@@ -32,12 +31,6 @@ namespace AuthService.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    var errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList();
-                    _logger.Error("Invalid registration attempt for {Email}. Errors: {Errors}", null, null, null, dto.Email, string.Join(", ", errors));
-                    return BadRequest(ApiResponse<string>.FailureResponse("Invalid registration data.", 400, errors));
-                }
                 await _authService.RegisterAsync(dto);
 
                 _logger.Info("User {Email} registered successfully. Confirmation email sent.", null, null, dto.Email);
@@ -46,7 +39,7 @@ namespace AuthService.Controllers
             catch (HandleException ex)
             {
                 _logger.Error("Unexpected error in Register for {Email}", ex, null, null, dto.Email);
-                return BadRequest(ApiResponse<string>.FailureResponse("User registration failed.", 400, ex.Errors));
+                return StatusCode(ex.StatusCode, ApiResponse<string>.FailureResponse(ex.Message, ex.StatusCode, ex.Errors));
             }
         }
 
@@ -59,18 +52,14 @@ namespace AuthService.Controllers
                 var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
                 var loginTime = DateTime.UtcNow;
                 var loginResponse = await _authService.LoginAsync(dto, clientIp!);
-                if (loginResponse == null)
-                {
-                    return Unauthorized(ApiResponse<string>.FailureResponse("Invalid credentials.", 401));
-                }
+                _logger.Info("User {Email} logged in successfully from IP: {clientIp} at UTC: {loginTime}.", propertyValues: [dto.Email, clientIp!, loginTime]);
 
-                _logger.Info("User {Email} logged in successfully from IP: {clientIp} at UTC: {loginTime}.", null, null, dto.Email, clientIp!, loginTime);
-                return Ok(ApiResponse<LoginResponseDto>.SuccessResponse(loginResponse, "Login successful"));
+                return Ok(ApiResponse<LoginResponseDto>.SuccessResponse(loginResponse!, "Login successful"));
             }
             catch (HandleException ex)
             {
                 _logger.Error("Unexpected error in Login for {Email}", ex, null, null, dto.Email);
-                return BadRequest(ApiResponse<string>.FailureResponse("User logged failed.", 400, ex.Errors));
+                return StatusCode(ex.StatusCode, ApiResponse<string>.FailureResponse(ex.Message, ex.StatusCode, ex.Errors));
             }
         }
 
@@ -80,13 +69,6 @@ namespace AuthService.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    var errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList();
-                    _logger.Warn("Invalid refresh token request for user {UserId}. Errors: {Errors}", null, null, dto.UserId, string.Join(", ", errors));
-                    return BadRequest(ApiResponse<string>.FailureResponse("Invalid refresh token data.", 400, errors));
-                }
-
                 var ipClient = HttpContext.Connection.RemoteIpAddress?.ToString();
                 var refreshTokenResponse = await _authService.RefreshTokenAsync(dto, ipClient);
 
@@ -95,7 +77,7 @@ namespace AuthService.Controllers
             catch (HandleException ex)
             {
                 _logger.Error("Unexpected error in RefreshToken for user {UserId}", ex, null, null, dto.UserId);
-                return BadRequest(ApiResponse<string>.FailureResponse("Failed to refresh token.", 400, ex.Errors));
+                return StatusCode(ex.StatusCode, ApiResponse<string>.FailureResponse(ex.Message, ex.StatusCode, ex.Errors));
             }
         }
 
@@ -172,7 +154,7 @@ namespace AuthService.Controllers
             catch (HandleException ex)
             {
                 _logger.Error("Unexpected error when generate reset password token.", ex);
-                return BadRequest(ApiResponse<string>.FailureResponse("Failed to generate reset password token.", 400, ex.Errors));
+                return StatusCode(ex.StatusCode, ApiResponse<string>.FailureResponse(ex.Message, ex.StatusCode, ex.Errors));
             }
         }
 
@@ -191,7 +173,7 @@ namespace AuthService.Controllers
             catch (HandleException ex)
             {
                 _logger.Error("Unexpected error when reset password.", ex);
-                return BadRequest(ApiResponse<string>.FailureResponse("Failed to reset password.", 400, ex.Errors));
+                return StatusCode(ex.StatusCode, ApiResponse<string>.FailureResponse(ex.Message, ex.StatusCode, ex.Errors));
             }
         }
 
@@ -286,31 +268,47 @@ namespace AuthService.Controllers
         [HttpPut("user-info")]
         public async Task<IActionResult> UpdateUserInfo([FromBody] UpdateAuthEvent command)
         {
-            var user = await _authService.GetUserByIdAsync(command.Id.ToString());
-            if (user == null)
+            try
             {
-                _logger.Info("User with ID {UserId} not found in AuthService for internal update.", null, null, command.Id);
-                return NotFound($"User with ID: {command.Id} not found in AuthService.");
-            }
+                var user = await _authService.GetUserByIdAsync(command.Id.ToString());
+                if (user == null)
+                {
+                    _logger.Info("User with ID {UserId} not found in AuthService for internal update.", null, null, command.Id);
+                    return NotFound($"User with ID: {command.Id} not found in AuthService.");
+                }
 
-            await _authService.UpdateUserInfoAsync(command);
-            _logger.Info("User info updated successfully for user ID: {UserId}", null, null, command.Id);
-            return Ok(ApiResponse<string>.SuccessResponse(null, "User info updated successfully."));
+                await _authService.UpdateUserInfoAsync(command);
+                _logger.Info("User info updated successfully for user ID: {UserId}", null, null, command.Id);
+                return Ok(ApiResponse<string>.SuccessResponse(null, "User info updated successfully."));
+            }
+            catch (HandleException ex)
+            {
+                _logger.Error("Unexpected error in UpdateUserInfo for user ID {UserId}", ex, null, null, command.Id);
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to update user info.", 400, ex.Errors));
+            }
         }
 
         [HttpPost("create-user")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateUserByAdmin([FromBody] CreateUserByAdminRequest request)
         {
-            _logger.Info("Admin ({AdminEmail}) attempting to create new user with Email: {Email}", null, null, User.Identity?.Name!, request.Email);
-
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(ModelState);
-            }
+                _logger.Info("Admin ({AdminEmail}) attempting to create new user with Email: {Email}", null, null, User.Identity?.Name!, request.Email);
 
-            var newUser = await _authService.CreateUserByAdminAsync(request);
-            return Ok(ApiResponse<string>.SuccessResponse("User created successfully user for email: {Email}. Password sent to user email.", newUser.Email!));
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var newUser = await _authService.CreateUserByAdminAsync(request);
+                return Ok(ApiResponse<string>.SuccessResponse("User created successfully user for email: {Email}. Password sent to user email.", newUser.Email!));
+            }
+            catch (HandleException ex)
+            {
+                _logger.Error("Unexpected error in CreateUserByAdmin for email {Email}", ex, null, null, request.Email);
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to create user.", 400, ex.Errors));
+            }
         }
 
         [HttpPost("unlockout")]

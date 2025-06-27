@@ -67,6 +67,11 @@ namespace WebAPI.Services
 
                 return userProfile;
             }
+            catch (HandleException hex)
+            {
+                _logger.Error("HandleException occurred while retrieving user.", hex);
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.Error("Error retrieving user with ID: {ID}", ex, null, null, id);
@@ -79,12 +84,6 @@ namespace WebAPI.Services
             try
             {
                 var existingUser = await _userRepository.GetUserByIdAsync(id);
-                if (existingUser == null)
-                {
-                    _logger.Warn("User with ID: {ID} not found for update.", null, null, id);
-                    throw new KeyNotFoundException($"User with ID: {id} not found.");
-                }
-
                 var oldEmail = existingUser.Email;
                 var oldPhoneNumber = existingUser.PhoneNumber;
 
@@ -107,6 +106,11 @@ namespace WebAPI.Services
                 }
 
                 return _mapper.Map<User, UserProfile>(updatedUser);
+            }
+            catch(HandleException hex)
+            {
+                _logger.Error("HandleException occurred while updating user.", hex);
+                throw;
             }
             catch (Exception ex)
             {

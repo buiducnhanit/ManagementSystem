@@ -174,7 +174,7 @@ namespace AuthService.Services
                 if (user == null)
                 {
                     _logger.Warn("Login failed. Reason: User not found for email {Email}", null, null, dto.Email);
-                    throw new HandleException("Invalid credentials.", 401, new List<string> { "Email or password incorrect." });
+                    throw new HandleException("Invalid credentials.", 401, ["Email or password incorrect."]);
                 }
 
                 var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, false);
@@ -208,7 +208,7 @@ namespace AuthService.Services
                     }
 
                     _logger.Warn("Login failed. Reason: Invalid password for user {Email}", null, null, dto.Email);
-                    throw new HandleException("Login failed.", 400, new List<string> { "Incorrect password." });
+                    throw new HandleException("Login failed.", 400, ["Incorrect password."]);
                 }
 
                 await _userManager.UpdateSecurityStampAsync(user);
@@ -245,39 +245,75 @@ namespace AuthService.Services
 
         public async Task<ApplicationUser> GetUserByIdAsync(string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
+            try
             {
-                _logger.Warn("User not found for ID {UserId}", null, null, userId);
-                throw new HandleException("User not found.", 404);
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    _logger.Warn("User not found for ID {UserId}", null, null, userId);
+                    throw new HandleException("User not found.", 404);
+                }
+                _logger.Debug("User {UserId} ({Email}) retrieved successfully.", null, null, user.Id, user.Email!);
+                return user;
             }
-            _logger.Debug("User {UserId} ({Email}) retrieved successfully.", null, null, user.Id, user.Email!);
-            return user;
+            catch(HandleException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unexpected error in GetUserByIdAsync for {UserId}", ex, null, null, userId);
+                throw new HandleException("An unexpected error occurred while retrieving user.", 500);
+            }
         }
 
         public async Task UpdateSecurityStampAsync(string id)
         {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
+            try
             {
-                _logger.Warn("User not found for ID {UserId}", null, null, id);
-                throw new HandleException("User not found.", 404);
+                var user = await _userManager.FindByIdAsync(id);
+                if (user == null)
+                {
+                    _logger.Warn("User not found for ID {UserId}", null, null, id);
+                    throw new HandleException("User not found.", 404);
+                }
+                await _userManager.UpdateSecurityStampAsync(user);
+                _logger.Debug("Security stamp updated for user {UserId} ({Email}).", null, null, user.Id, user.Email!);
             }
-            await _userManager.UpdateSecurityStampAsync(user);
-            _logger.Debug("Security stamp updated for user {UserId} ({Email}).", null, null, user.Id, user.Email!);
+            catch (HandleException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unexpected error in UpdateSecurityStampAsync for {UserId}", ex, null, null, id);
+                throw new HandleException("An unexpected error occurred while updating security stamp.", 500);
+            }
         }
 
         public async Task<List<string>> GetUserRolesAsync(string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
+            try
             {
-                _logger.Warn("User not found for ID {UserId}", userId);
-                throw new HandleException("User not found.", 404);
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    _logger.Warn("User not found for ID {UserId}", propertyValues: userId);
+                    throw new HandleException("User not found.", 404);
+                }
+                var roles = await _userManager.GetRolesAsync(user);
+                _logger.Info("Roles retrieved for user {UserId} ({Email}): {@Roles}", user.Id, user.Email, roles);
+                return [.. roles];
             }
-            var roles = await _userManager.GetRolesAsync(user);
-            _logger.Info("Roles retrieved for user {UserId} ({Email}): {@Roles}", user.Id, user.Email, roles);
-            return roles.ToList();
+            catch (HandleException)
+            {
+                throw;
+            }
+            catch(Exception ex)
+            {
+                _logger.Error("Unexpected error in GetUserRolesAsync for {UserId}", ex, propertyValues: userId);
+                throw new HandleException("An unexpected error occurred while retrieving user roles.", 500);
+            }
         }
 
         public async Task<RefreshTokenResponseDto> RefreshTokenAsync(RefreshTokenRequestDto dto, string? clientIp)
@@ -332,27 +368,6 @@ namespace AuthService.Services
             catch (Exception ex)
             {
                 _logger.Error("Error revoking tokens for user {userId} during logout.", ex, null, null, userId);
-                throw new HandleException("An unexpected error occurred during logout.", 500);
-            }
-        }
-
-        public async Task<ApplicationUser> GetUserByEmailAsync(string email)
-        {
-            try
-            {
-                var user = await _userManager.FindByEmailAsync(email);
-                if (user == null)
-                {
-                    _logger.Warn("User not found for email {Email}", email);
-                    throw new HandleException("User not found.", 404);
-                }
-
-                _logger.Info("User {UserId} ({Email}) retrieved successfully.", user.Id, user.Email);
-                return user;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Fail to retrieved user.", ex);
                 throw new HandleException("An unexpected error occurred during logout.", 500);
             }
         }
@@ -581,13 +596,6 @@ namespace AuthService.Services
 
         public async Task<ApplicationUser> CreateUserByAdminAsync(CreateUserByAdminRequest request)
         {
-            var existingUser = await _userManager.FindByEmailAsync(request.Email);
-            if (existingUser != null)
-            {
-                _logger.Warn("User with Email {Email} already exists.", null, null, request.Email);
-                throw new Exception("Email is already exists.");
-            }
-
             var randomPassword = GenerateRandomPassword(_passwordOptions);
             _logger.Info("Generated random password for new user {Email}.", null, null, request.Email);
 
@@ -605,7 +613,7 @@ namespace AuthService.Services
             {
                 var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
                 _logger.Error("Failed to create user identity in AuthService for Email {Email}", null, null, request.Email);
-                throw new Exception($"Failed to create user identity: {errors}");
+                throw new HandleException("Failed to create user identity.", StatusCodes.Status400BadRequest, [..createResult.Errors.Select(e => e.Description)]);
             }
 
             var assignRoleResult = await _userManager.AddToRoleAsync(newUser, "User");
@@ -613,7 +621,7 @@ namespace AuthService.Services
             {
                 _logger.Error("Failed to assign 'User' role to new user {UserId} with Email {Email}. Rolling back user identity creation.", null, null, null, newUser.Id, newUser.Email);
                 await _userManager.DeleteAsync(newUser);
-                throw new HandleException("Failed to assign default role, user identity creation rolled back.", (int)HttpStatusCode.InternalServerError);
+                throw new HandleException("Failed to assign default role, user identity creation rolled back.", StatusCodes.Status400BadRequest, [.. assignRoleResult.Errors.Select(e => e.Description)]);
             }
             _logger.Debug("New user identity {Email} created in AuthService and assigned 'User' role. User ID: {UserId}.", null, null, newUser.Email, newUser.Id.ToString());
 
@@ -647,10 +655,14 @@ namespace AuthService.Services
                 await _sendMailService.SendEmailAsync(request.Email, emailSubject, emailBody);
                 _logger.Info("Random password sent to user {Email}.", request.Email);
             }
+            catch(HandleException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.Error("Failed to send random password email to user {Email} after successful creation. This requires manual intervention.", ex, request.Email);
-                throw new HandleException("Failed to send email with random password after user creation.", (int)HttpStatusCode.InternalServerError);
+                throw new HandleException("Failed to send email with random password after user creation.", StatusCodes.Status500InternalServerError);
             }
 
             return newUser;

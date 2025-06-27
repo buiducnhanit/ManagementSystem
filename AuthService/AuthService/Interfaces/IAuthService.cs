@@ -13,7 +13,6 @@ namespace AuthService.Interfaces
         Task<List<string>> GetUserRolesAsync(string userId);
         Task<RefreshTokenResponseDto> RefreshTokenAsync(RefreshTokenRequestDto dto, string? clientIp);
         Task LogoutAsync(string userId, string? clientIp);
-        Task<ApplicationUser> GetUserByEmailAsync(string email);
         Task ForgotPasswordAsyns(ForgotPasswordRequest request);
         Task<bool> ResetPasswordAsyns(ResetPasswordRequest request);
         Task<bool> ConfirmEmailAsync(ConfirmEmailRequest request);

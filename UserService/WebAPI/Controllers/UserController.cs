@@ -1,4 +1,5 @@
 ﻿using Asp.Versioning;
+using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Common.Response;
 using Microsoft.AspNetCore.Authorization;
@@ -39,10 +40,10 @@ namespace WebAPI.Controllers
 
                 return Ok(ApiResponse<UserProfile>.SuccessResponse(userProfile, "User created successfully."));
             }
-            catch (Exception ex)
+            catch (HandleException ex)
             {
                 _logger.Error("Error creating user.", ex);
-                return BadRequest(ApiResponse<string>.FailureResponse("Error creating user."));
+                return BadRequest(ApiResponse<string>.FailureResponse("Error creating user.", errors: ex.Errors));
             }
         }
 
@@ -61,10 +62,10 @@ namespace WebAPI.Controllers
                 _logger.Info("User retrieved successfully.", null, null, userProfile);
                 return Ok(ApiResponse<UserProfile>.SuccessResponse(userProfile, "User retrieved successfully."));
             }
-            catch (Exception ex)
+            catch (HandleException ex)
             {
                 _logger.Error("Error retrieving user with ID {ID}.", ex, null, null, id);
-                return BadRequest(ApiResponse<string>.FailureResponse("Error retrieving user."));
+                return BadRequest(ApiResponse<string>.FailureResponse("Error retrieving user.", errors:ex.Errors));
             }
         }
 
@@ -87,10 +88,10 @@ namespace WebAPI.Controllers
 
                 return Ok(ApiResponse<UserProfile>.SuccessResponse(updatedUserProfile, "User updated successfully."));
             }
-            catch (Exception ex)
+            catch (HandleException ex)
             {
                 _logger.Error("Error updating user.", ex);
-                return BadRequest(ApiResponse<string>.FailureResponse("Error updating user."));
+                return BadRequest(ApiResponse<string>.FailureResponse("Error updating user.", errors: ex.Errors));
             }
         }
 
@@ -115,10 +116,10 @@ namespace WebAPI.Controllers
                 _logger.Info("User deleted successfully.", null, null, id);
                 return Ok(ApiResponse<string>.SuccessResponse("User deleted successfully."));
             }
-            catch (Exception ex)
+            catch (HandleException ex)
             {
                 _logger.Error("Error deleting user with ID {ID}.", ex, null, null, id);
-                return BadRequest(ApiResponse<string>.FailureResponse("Error deleting user."));
+                return BadRequest(ApiResponse<string>.FailureResponse("Error deleting user.", errors: ex.Errors));
             }
         }
 
@@ -137,10 +138,10 @@ namespace WebAPI.Controllers
                 _logger.Info("All users retrieved successfully.");
                 return Ok(ApiResponse<IEnumerable<UserProfile>>.SuccessResponse(users, "Users retrieved successfully."));
             }
-            catch (Exception ex)
+            catch (HandleException ex)
             {
                 _logger.Error("Error retrieving all users.", ex);
-                return BadRequest(ApiResponse<string>.FailureResponse("Error retrieving users."));
+                return BadRequest(ApiResponse<string>.FailureResponse("Error retrieving users.", errors: ex.Errors));
             }
         }
 
@@ -165,10 +166,10 @@ namespace WebAPI.Controllers
                 _logger.Info("User profile retrieved successfully.", null, null, userProfile);
                 return Ok(ApiResponse<UserProfile>.SuccessResponse(userProfile, "User profile retrieved successfully."));
             }
-            catch (Exception ex)
+            catch (HandleException ex)
             {
                 _logger.Error("Error retrieving user profile.", ex);
-                return BadRequest(ApiResponse<string>.FailureResponse("Error retrieving user profile."));
+                return BadRequest(ApiResponse<string>.FailureResponse("Error retrieving user profile.", errors: ex.Errors));
             }
         }
     }

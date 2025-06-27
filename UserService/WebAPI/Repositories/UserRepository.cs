@@ -3,6 +3,7 @@ using WebAPI.Interfaces;
 using WebAPI.Data;
 using ManagementSystem.Shared.Common.Interfaces;
 using ManagementSystem.Shared.Common.Logging;
+using ManagementSystem.Shared.Common.Exceptions;
 
 namespace WebAPI.Repositories
 {
@@ -44,16 +45,16 @@ namespace WebAPI.Repositories
                 var user = await _generic.GetByIdAsync(id);
                 if (user == null)
                 {
-                    _logger.Warn("User with ID: {id} not found.", id);
+                    _logger.Warn("User with ID: {id} not found.", propertyValues: id);
                     throw new KeyNotFoundException($"User with ID: {id} not found.");
                 }
 
-                _logger.Info("User with ID: {ID} retrieved successfully.", id);
+                _logger.Info("User with ID: {ID} retrieved successfully.", propertyValues: id);
                 return user!;
             }
-            catch (Exception ex)
+            catch (HandleException ex)
             {
-                _logger.Error("Error retrieving user with ID: {ID}", ex, id);
+                _logger.Error("Error retrieving user with ID: {ID}", ex, propertyValues: id);
                 throw;
             }
         }
