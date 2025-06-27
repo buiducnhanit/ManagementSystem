@@ -26,9 +26,13 @@ services:
       - .env
     environment:
       ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=AuthServiceDb;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;"
-      JWT_KEY: "${JWT_KEY}"
-      JWT_ISSUER: "${JWT_ISSUER}"
-      JWT_AUDIENCE: "${JWT_AUDIENCE}"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
+      Jwt__DurationInMinutes: "${JWT_DURATIONINMINUTES}"
+      Jwt__RefreshTokenDurationInDays: "${JWT_REFRESH_TOKEN_DURATION_IN_DAY}"
+      JWT__RememberMeRefreshTokenDurationInDays: "${JWT_REMEMBERME_REFRESH_TOKEN_DURATION_IN_DAY}"
+      Sesion__IdleSessionTimeoutInHours: "${SESSION_IDE_SESSION_TIMEOUT_IN_HOURS}"
       EMAIL_API_KEY: "${EMAIL_API_KEY}"
       EMAIL_SECRET_KEY: "${EMAIL_SECRET_KEY}"
       EMAIL_SENDER_EMAIL: "${EMAIL_SENDER_EMAIL}"
@@ -56,9 +60,9 @@ services:
       - .env
     environment:
       ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=UserServiceDb;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;"
-      JWT_KEY: "${JWT_KEY}"
-      JWT_ISSUER: "${JWT_ISSUER}"
-      JWT_AUDIENCE: "${JWT_AUDIENCE}"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
       AuthService__BaseUrl: "${AUTH_SERVICE_URL}"
       ASPNETCORE_URLS: "${ASPNETCORE_URLS}"
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
@@ -80,9 +84,9 @@ services:
     env_file:
       - .env
     environment:
-      JWT_KEY: "${JWT_KEY}"
-      JWT_ISSUER: "${JWT_ISSUER}"
-      JWT_AUDIENCE: "${JWT_AUDIENCE}"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
       ASPNETCORE_URLS: "${ASPNETCORE_URLS}"
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
     ports:
@@ -136,7 +140,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     networks:
       - microservice_network
-
+   
 networks:
   microservice_network:
     driver: bridge 
