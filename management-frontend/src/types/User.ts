@@ -9,4 +9,7 @@ export interface User {
     phoneNumber: string;
     dateOfBirth: string;
     roles?: string[];
+    isDeleted: boolean;
+    createdAt: string;
+    updatedAt: string;
 }

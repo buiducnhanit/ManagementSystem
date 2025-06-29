@@ -118,3 +118,13 @@ export const removeUserRoleAsync = async (userId: string, roles: string[]) => {
         throw error.response?.data;
     }
 }
+
+export const unlockUserAsync = async (userId: string) => {
+    try {
+        const response = await api.post(`/auth/unlockout`, { id: userId });
+        return response;
+    } catch (error: any) {
+        console.log(error.response?.data);
+        throw error.response?.data;
+    }
+}

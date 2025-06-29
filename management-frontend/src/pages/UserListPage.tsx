@@ -4,7 +4,7 @@ import type { User } from '../types/User';
 import { useNavigate } from 'react-router-dom';
 import { deleteUserAsync, getAllRolesAsync, getAllUsersAsync } from '../services/userService';
 import { getUserRole } from '../utils/helper';
-import { addUserRoleAsync, removeUserRoleAsync } from '../services/authService';
+import { addUserRoleAsync, removeUserRoleAsync, unlockUserAsync } from '../services/authService';
 import type { Role } from '../types/Role';
 
 const PAGE_SIZE = 5;
@@ -47,7 +47,7 @@ const UserListPage: React.FC = () => {
         if (window.confirm('Bạn có chắc muốn xóa người dùng này?')) {
             try {
                 await deleteUserAsync(id);
-                setUsers(prev => prev.filter(user => user.id !== id));
+                // setUsers(prev => prev.filter(user => user.id !== id));
             } catch (error: any) {
                 alert('Xóa người dùng thất bại!');
                 console.log(error)
@@ -104,6 +104,22 @@ const UserListPage: React.FC = () => {
             console.log(error);
         }
     }
+    
+    const handleUnlock = async (id: string) => {
+        if (window.confirm('Bạn có chắc muốn mở khóa người dùng này?')) {
+            try {
+                await unlockUserAsync(id);
+                setUsers(prev =>
+                    prev.map(user =>
+                        user.id === id ? { ...user, isDeleted: false } : user
+                    )
+                );
+            } catch (error: any) {
+                alert('Mở khóa người dùng thất bại!');
+                console.log(error);
+            }
+        }
+    };
 
     return (
         <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow-lg mt-8">
@@ -148,7 +164,7 @@ const UserListPage: React.FC = () => {
                                                     className="inline-flex items-center bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium"
                                                 >
                                                     {role}
-                                                    {userRole === 'Admin' && (
+                                                    {userRole === 'Admin' && !user.isDeleted && (
                                                         <button
                                                             className="ml-1 w-5 h-5 flex items-center justify-center rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition"
                                                             onClick={e => { e.stopPropagation(); handleRemoveRole(user.id, role) }}
@@ -165,7 +181,7 @@ const UserListPage: React.FC = () => {
                                         ) : (
                                             <span className="text-gray-400 italic">Chưa có</span>
                                         )}
-                                        {userRole === 'Admin' && roles
+                                        {userRole === 'Admin' && !user.isDeleted && roles
                                             .map(r => r.name)
                                             .filter(roleName => !user.roles?.includes(roleName)).length > 0 && (
                                                 <div className="relative">
@@ -210,27 +226,44 @@ const UserListPage: React.FC = () => {
                                 </td>
                                 {(userRole !== 'User') && (
                                     <td className="py-2 px-4 border-b">
-                                        {(userRole === 'Admin' || userRole === 'Manager') && (
+                                        {user.isDeleted ? (
                                             <button
-                                                onClick={e => { e.stopPropagation(); handleEdit(user.id); }}
-                                                className="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-600 hover:text-white transition font-medium mr-2"
+                                                onClick={e => {
+                                                    e.stopPropagation();
+                                                    handleUnlock(user.id);
+                                                }}
+                                                className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-600 hover:text-white transition font-medium"
                                             >
                                                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6 6M3 17v4h4l10.293-10.293a1 1 0 000-1.414l-3.586-3.586a1 1 0 00-1.414 0L3 17z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 17v-6m0 0V7m0 4h4m-4 0H8m8 4a4 4 0 11-8 0 4 4 0 018 0z" />
                                                 </svg>
-                                                Sửa
+                                                Mở khóa
                                             </button>
-                                        )}
-                                        {(userRole === 'Admin') && (
-                                            <button
-                                                onClick={e => { e.stopPropagation(); handleDelete(user.id); }}
-                                                className="inline-flex items-center px-3 py-1 bg-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition font-medium"
-                                            >
-                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                                Xóa
-                                            </button>
+                                        ) : (
+                                            <>
+                                                {(userRole === 'Admin' || userRole === 'Manager') && (
+                                                    <button
+                                                        onClick={e => { e.stopPropagation(); handleEdit(user.id); }}
+                                                        className="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-600 hover:text-white transition font-medium mr-2"
+                                                    >
+                                                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6 6M3 17v4h4l10.293-10.293a1 1 0 000-1.414l-3.586-3.586a1 1 0 00-1.414 0L3 17z" />
+                                                        </svg>
+                                                        Sửa
+                                                    </button>
+                                                )}
+                                                {(userRole === 'Admin') && (
+                                                    <button
+                                                        onClick={e => { e.stopPropagation(); handleDelete(user.id); }}
+                                                        className="inline-flex items-center px-3 py-1 bg-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition font-medium"
+                                                    >
+                                                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                        Xóa
+                                                    </button>
+                                                )}
+                                            </>
                                         )}
                                     </td>
                                 )}
