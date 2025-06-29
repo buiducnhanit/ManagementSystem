@@ -17,9 +17,10 @@ namespace WebAPI.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly ITopicProducer<UserDeletedEvent> _topicProducer;
+        private readonly ITopicProducer<UpdateAuthEvent> _updateAuthTopicProducer;
 
         public UserService(IUserRepository userRepository, ICustomLogger<UserService> logger, IMapper mapper, IHttpClientFactory httpClientFactory,
-            IConfiguration configuration, ITopicProducer<UserDeletedEvent> topicProducer)
+            IConfiguration configuration, ITopicProducer<UserDeletedEvent> topicProducer, ITopicProducer<UpdateAuthEvent> updateAuthTopicProducer)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -27,6 +28,7 @@ namespace WebAPI.Services
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _topicProducer = topicProducer ?? throw new ArgumentNullException(nameof(topicProducer));
+            _updateAuthTopicProducer = updateAuthTopicProducer;
         }
 
         public async Task<UserProfile> CreateUserAsync(CreateUserRequest request)
@@ -107,7 +109,7 @@ namespace WebAPI.Services
 
                 return _mapper.Map<User, UserProfile>(updatedUser);
             }
-            catch(HandleException hex)
+            catch (HandleException hex)
             {
                 _logger.Error("HandleException occurred while updating user.", hex);
                 throw;
@@ -121,10 +123,11 @@ namespace WebAPI.Services
 
         private async Task SynchronizeAuthServiceUserInfoAsync(UpdateAuthEvent request)
         {
-            _logger.Info("Attempting to synchronize user ID: {UserId} info with AuthService.", null, null, request.Id);
+            //_logger.Info("Attempting to synchronize user ID: {UserId} info with AuthService.", null, null, request.Id);
 
-            var client = _httpClientFactory.CreateClient();
-            client.BaseAddress = new Uri(_configuration["AuthService:BaseUrl"]!);
+            //var client = _httpClientFactory.CreateClient();
+            //client.BaseAddress = new Uri(_configuration["AuthService:BaseUrl"]!);
+            //_logger.Info("AuthService Base URL: {BaseUrl}", null, null, client.BaseAddress);
 
             //var internalToken = _jwtInternalService.GenerateInternalServiceToken();
             //client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
@@ -135,29 +138,29 @@ namespace WebAPI.Services
                 Email = request.Email,
                 PhoneNumber = request.PhoneNumber,
             };
+            await _updateAuthTopicProducer.Produce(updateAuthCommand);
+            //try
+            //{
+            //    var response = await client.PutAsJsonAsync("api/v1/auth/user-info", updateAuthCommand);
 
-            try
-            {
-                var response = await client.PutAsJsonAsync("api/v1/auth/user-info", updateAuthCommand);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.Error("Failed to update user info in AuthService.");
-                    throw new HttpRequestException($"AuthService synchronization failed: {response.StatusCode} - {errorContent}");
-                }
-                _logger.Info("User info synchronized successfully with AuthService for user ID: {UserId}", null, null, request.Id);
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.Error("Network or HTTP error calling AuthService.");
-                throw new Exception("Error during AuthService synchronization. Please contact support.", ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("An unexpected error occurred during AuthService.");
-                throw new Exception("An unexpected error occurred during AuthService synchronization.", ex);
-            }
+            //    if (!response.IsSuccessStatusCode)
+            //    {
+            //        var errorContent = await response.Content.ReadAsStringAsync();
+            //        _logger.Error("Failed to update user info in AuthService.");
+            //        throw new HttpRequestException($"AuthService synchronization failed: {response.StatusCode} - {errorContent}");
+            //    }
+            //    _logger.Info("User info synchronized successfully with AuthService for user ID: {UserId}", null, null, request.Id);
+            //}
+            //catch (HttpRequestException ex)
+            //{
+            //    _logger.Error("Network or HTTP error calling AuthService.");
+            //    throw new Exception("Error during AuthService synchronization. Please contact support.", ex);
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.Error("An unexpected error occurred during AuthService.");
+            //    throw new Exception("An unexpected error occurred during AuthService synchronization.", ex);
+            //}
         }
 
         public async Task<bool> DeleteUserAsync(Guid id)
@@ -216,10 +219,13 @@ namespace WebAPI.Services
                 }
 
                 user.IsDeleted = false;
+                await _userRepository.UpdateUserAsync(user);
+                _logger.Info("User with ID: {ID} unlocked successfully.", propertyValues: id);
                 return true;
             }
             catch (HandleException)
             {
+                _logger.Error("HandleException occurred while unlocking user with ID: {ID}", propertyValues: id);
                 throw;
             }
             catch (Exception ex) { throw new Exception("Error occurring unlock user."); }

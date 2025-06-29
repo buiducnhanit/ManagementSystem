@@ -19,6 +19,7 @@ namespace WebAPI.Extensions
                 x.AddRider(rider =>
                 {
                     rider.AddProducer<UserDeletedEvent>("user-deleted-topic");
+                    rider.AddProducer<UpdateAuthEvent>("user-update-auth-topic");
 
                     rider.AddConsumer<UserRegisteredConsumer>();
                     rider.AddConsumer<UnLockUserConsumer>();

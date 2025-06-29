@@ -64,7 +64,7 @@ namespace WebAPI.Repositories
             try
             {
                 await _generic.UpdateAsync(user);
-                _logger.Info("User with ID: {Id} updated successfully.", user.Id);
+                _logger.Info("User with ID: {Id} updated successfully.", propertyValues: user.Id);
 
                 return user;
             }
@@ -80,13 +80,13 @@ namespace WebAPI.Repositories
             try
             {
                 await _generic.SoftDeleteByIdAsync(id);
-                _logger.Info("User with ID: {ID} deleted successfully.", id);
+                _logger.Info("User with ID: {ID} deleted successfully.", propertyValues: id);
 
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.Error("Error deleting user with ID: {ID}", ex, id);
+                _logger.Error("Error deleting user with ID: {ID}", ex, propertyValues: id);
                 throw;
             }
         }

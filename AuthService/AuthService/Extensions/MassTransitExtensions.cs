@@ -11,6 +11,7 @@ namespace AuthService.Extensions
             services.AddMassTransit(x =>
             {
                 x.AddConsumer<UserDeletedConsumer>();
+                x.AddConsumer<UpdateAuthConsumer>();
 
                 x.UsingInMemory();
                
@@ -21,12 +22,18 @@ namespace AuthService.Extensions
                     rider.AddProducer<UpdateUserProfileEvent>("user-update-topic");
 
                     rider.AddConsumer<UserDeletedConsumer>();
+                    rider.AddConsumer<UpdateAuthConsumer>();
+
                     rider.UsingKafka((context, cfg) =>
                     {
                         cfg.Host(configuration["Kafka:BootstrapServers"]);
                         cfg.TopicEndpoint<UserDeletedEvent>("user-deleted-topic", nameof(UserDeletedConsumer), e =>
                         {
                             e.ConfigureConsumer<UserDeletedConsumer>(context);
+                        });
+                        cfg.TopicEndpoint<UpdateAuthEvent>("user-update-auth-topic", nameof(UpdateAuthConsumer), e =>
+                        {
+                            e.ConfigureConsumer<UpdateAuthConsumer>(context);
                         });
                     });
                 });
