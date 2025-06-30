@@ -27,6 +27,11 @@ namespace WebAPI.Consumers
             {
                 var UserRegisteredEvent = context.Message;
                 _logger.Debug("User registered event data message: {UserRegisteredEvent}", propertyValues: UserRegisteredEvent);
+                if(_userService.GetUserByIdAsync(UserRegisteredEvent.Id) != null)
+                {
+                    _logger.Warn("User with ID: {ID} already exists.", propertyValues: UserRegisteredEvent.Id);
+                    return;
+                }
                 var userProfile = await _userService.CreateUserAsync(_mapper.Map<CreateUserRequest>(UserRegisteredEvent));
                 _logger.Info("User registered successfully.", null, null, userProfile);
             }
