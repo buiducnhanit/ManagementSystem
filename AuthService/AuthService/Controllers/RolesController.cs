@@ -37,19 +37,14 @@ namespace AuthService.Controllers
                 var result = await _roleService.AddUserRolesAsync(request);
                 if (result)
                 {
-                    return Ok(new { message = "Roles added successfully." });
+                    return Ok(ApiResponse<string>.SuccessResponse("Roles added successfully."));
                 }
-                return BadRequest(new { message = "Failed to add roles." });
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to add roles."));
             }
             catch (HandleException ex)
             {
                 _logger.Error("Error adding roles for user {UserId}", ex, request.UserId);
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("An unhandled error occurred while adding roles for user {UserId}", ex, request.UserId);
-                return StatusCode(500, new { message = "Internal server error." });
+                return StatusCode(ex.StatusCode, ApiResponse<string>.FailureResponse(ex.Message, ex.StatusCode, ex.Errors));
             }
         }
 
@@ -66,19 +61,14 @@ namespace AuthService.Controllers
                 var result = await _roleService.RemoveUserRolesAsync(request);
                 if (result)
                 {
-                    return Ok(new { message = "Roles removed successfully." });
+                    return Ok(ApiResponse<string>.SuccessResponse("Roles removed successfully."));
                 }
-                return BadRequest(new { message = "Failed to remove roles." });
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to remove roles."));
             }
             catch (HandleException ex)
             {
                 _logger.Error("Error removing roles for user {UserId}", ex, request.UserId);
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("An unhandled error occurred while removing roles for user {UserId}", ex, request.UserId);
-                return StatusCode(500, new { message = "Internal server error." });
+                return StatusCode(ex.StatusCode, ApiResponse<string>.FailureResponse(ex.Message, ex.StatusCode, ex.Errors));
             }
         }
 

@@ -20,17 +20,17 @@ namespace ManagementSystem.Shared.Common.Interfaces
 
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync()
         {
-            return await _dbSet.Where(e => !e.IsDeleted).ToListAsync();
+            return await _dbSet.ToListAsync();
         }
 
         public virtual async Task<TEntity?> GetByIdAsync(TKey id)
         {
-            return await _dbSet.FirstOrDefaultAsync(e => e.Id.Equals(id) && !e.IsDeleted);
+            return await _dbSet.FirstOrDefaultAsync(e => e.Id.Equals(id));
         }
 
         public virtual async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate)
         {
-            return await _dbSet.Where(predicate).Where(e => !e.IsDeleted).ToListAsync();
+            return await _dbSet.Where(predicate).ToListAsync();
         }
 
         public virtual async Task AddAsync(TEntity entity)
