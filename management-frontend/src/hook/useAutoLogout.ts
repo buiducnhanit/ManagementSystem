@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
@@ -5,11 +6,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../redux/slices/authSlice';
 import { refreshTokenAsync } from '../services/authService';
 import { ACCESS_TOKEN_REFRESH_THRESHOLD_SECONDS, IDLE_TIMEOUT_MINUTES } from '../utils/constants';
+import { hubConnection, startHubConnection } from '../services/signalRService';
 
 const useAutoLogout = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-     const location = useLocation();
+    const location = useLocation();
 
     const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/confirm-email'];
 
@@ -105,6 +107,26 @@ const useAutoLogout = () => {
             });
         };
     }, [dispatch, navigate, location.pathname]);
+
+    useEffect(() => {
+        startHubConnection();
+        if (!hubConnection) {
+            return;
+        }
+
+        const forceLogoutHandler = (data: any) => {
+            // console.log("Received ForceLogout event from SignalR:", data);
+            alert(data?.Reason || "Phiên đăng nhập đã hết hạn hoặc bị đăng xuất từ thiết bị khác.");
+            dispatch(logout());
+            navigate("/login");
+        };
+
+        hubConnection.on("ForceLogout", forceLogoutHandler);
+
+        return () => {
+            hubConnection.off("ForceLogout", forceLogoutHandler);
+        };
+    }, [dispatch, navigate]);
 
     return null;
 };
