@@ -1,11 +1,14 @@
 ﻿using AuthService.DTOs;
 using AuthService.Entities;
+using AuthService.Hubs;
 using AuthService.Interfaces;
 using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Contracts;
 using MassTransit;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using System.Data;
 using System.Net;
@@ -27,10 +30,12 @@ namespace AuthService.Services
         private readonly PasswordOptions _passwordOptions;
         private readonly ITopicProducer<UserRegisteredEvent> _userRegisteredProducer;
         private readonly ITopicProducer<UnLockUserEvent> _unLockUserProducer;
+        private readonly IDistributedCache _distributedCache;
+        private readonly IHubContext<NotificationHub> _hubContext;
 
         public AuthServices(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthServices> logger,
             IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory, IOptions<IdentityOptions> passwordOptions,
-            ITopicProducer<UserRegisteredEvent> userRegisteredProducer, ITopicProducer<UnLockUserEvent> unLockUserProducer)
+            ITopicProducer<UserRegisteredEvent> userRegisteredProducer, ITopicProducer<UnLockUserEvent> unLockUserProducer, IDistributedCache distributedCache, IHubContext<NotificationHub> hubContext)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -43,6 +48,8 @@ namespace AuthService.Services
             _passwordOptions = passwordOptions.Value.Password;
             _userRegisteredProducer = userRegisteredProducer;
             _unLockUserProducer = unLockUserProducer;
+            _distributedCache = distributedCache;
+            _hubContext = hubContext;
         }
 
         public async Task<string?> RegisterAsync(RegisterDto dto)
@@ -224,6 +231,20 @@ namespace AuthService.Services
                 var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user, clientIp, dto.RememberMe);
                 _logger.Info("Generated new refresh token for user {UserId} with expiry {ExpiryTime}.", null, null, user.Id, refreshToken.ExpiryTime.ToShortTimeString());
 
+                var securityStamp = await _userManager.GetSecurityStampAsync(user);
+                await _distributedCache.SetStringAsync(
+                    $"session:{user.Id}",
+                    securityStamp,
+                    new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]!))
+                    });
+
+                await _hubContext.Clients.Group($"user:{user.Id}").SendAsync("ForceLogout", new
+                {
+                    Reason = "Your session has expired or you have logged in on another device."
+                });
+
                 return new LoginResponseDto
                 {
                     AccessToken = accessToken,
@@ -256,7 +277,7 @@ namespace AuthService.Services
                 _logger.Debug("User {UserId} ({Email}) retrieved successfully.", null, null, user.Id, user.Email!);
                 return user;
             }
-            catch(HandleException)
+            catch (HandleException)
             {
                 throw;
             }
@@ -309,7 +330,7 @@ namespace AuthService.Services
             {
                 throw;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Error("Unexpected error in GetUserRolesAsync for {UserId}", ex, propertyValues: userId);
                 throw new HandleException("An unexpected error occurred while retrieving user roles.", 500);
@@ -613,7 +634,7 @@ namespace AuthService.Services
             {
                 var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
                 _logger.Error("Failed to create user identity in AuthService for Email {Email}", null, null, request.Email);
-                throw new HandleException("Failed to create user identity.", StatusCodes.Status400BadRequest, [..createResult.Errors.Select(e => e.Description)]);
+                throw new HandleException("Failed to create user identity.", StatusCodes.Status400BadRequest, [.. createResult.Errors.Select(e => e.Description)]);
             }
 
             var assignRoleResult = await _userManager.AddToRoleAsync(newUser, "User");
@@ -655,7 +676,7 @@ namespace AuthService.Services
                 await _sendMailService.SendEmailAsync(request.Email, emailSubject, emailBody);
                 _logger.Info("Random password sent to user {Email}.", request.Email);
             }
-            catch(HandleException)
+            catch (HandleException)
             {
                 throw;
             }

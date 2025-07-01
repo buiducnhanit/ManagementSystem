@@ -24,6 +24,7 @@ namespace WebAPI.Extensions
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddMassTransitService(configuration);
+            builder.Services.AddRedisCacheService(configuration, "RedisConnection");
 
             builder.Services.AddControllers();
             builder.Services.AddCustomCors();

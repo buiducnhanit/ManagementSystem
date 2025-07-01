@@ -8,7 +8,8 @@ namespace ManagementSystem.Shared.Common.Middleware
         {
             return app
                 .UseMiddleware<TraceIdEnricherMiddleware>()
-                .UseMiddleware<ExceptionHandlingMiddleware>();
+                .UseMiddleware<ExceptionHandlingMiddleware>()
+                .UseMiddleware<SessionValidationMiddleware>();
         }
     }
 }

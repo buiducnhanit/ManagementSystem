@@ -1,8 +1,8 @@
 ﻿using Asp.Versioning.ApiExplorer;
 using AuthService.Configure;
 using AuthService.Data;
+using AuthService.Hubs;
 using AuthService.Interfaces;
-using AuthService.Middleware;
 using AuthService.Repositories;
 using AuthService.Services;
 using ManagementSystem.Shared.Common.DependencyInjection;
@@ -48,6 +48,19 @@ namespace AuthService.Extensions
             // Add MassTransit for Kafka
             builder.Services.AddMassTransitService(configuration);
 
+            builder.Services.AddRedisCacheService(configuration, "RedisConnection");
+            builder.Services.AddSignalR();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend", policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                });
+            });
+
             builder.Services.AddAuthorization();
             builder.Services.AddControllers();
             builder.Services.AddSwaggerExtension();
@@ -83,14 +96,14 @@ namespace AuthService.Extensions
             }
 
             //app.UseHttpsRedirection();
-
+            app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
 
             app.UseSharedPolicies();
-            app.UseMiddleware<SessionValidationMiddleware>();
+            app.MapHub<NotificationHub>("/hub/notifications");
 
             return app;
         }
