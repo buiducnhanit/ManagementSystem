@@ -5,11 +5,13 @@ using ManagementSystem.Shared.Common.Exceptions;
 using ManagementSystem.Shared.Common.Logging;
 using ManagementSystem.Shared.Contracts;
 using MassTransit;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using System.Data;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Web;
 
 namespace AuthService.Services
@@ -256,7 +258,7 @@ namespace AuthService.Services
                 _logger.Debug("User {UserId} ({Email}) retrieved successfully.", null, null, user.Id, user.Email!);
                 return user;
             }
-            catch(HandleException)
+            catch (HandleException)
             {
                 throw;
             }
@@ -309,7 +311,7 @@ namespace AuthService.Services
             {
                 throw;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Error("Unexpected error in GetUserRolesAsync for {UserId}", ex, propertyValues: userId);
                 throw new HandleException("An unexpected error occurred while retrieving user roles.", 500);
@@ -613,7 +615,7 @@ namespace AuthService.Services
             {
                 var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
                 _logger.Error("Failed to create user identity in AuthService for Email {Email}", null, null, request.Email);
-                throw new HandleException("Failed to create user identity.", StatusCodes.Status400BadRequest, [..createResult.Errors.Select(e => e.Description)]);
+                throw new HandleException("Failed to create user identity.", StatusCodes.Status400BadRequest, [.. createResult.Errors.Select(e => e.Description)]);
             }
 
             var assignRoleResult = await _userManager.AddToRoleAsync(newUser, "User");
@@ -655,7 +657,7 @@ namespace AuthService.Services
                 await _sendMailService.SendEmailAsync(request.Email, emailSubject, emailBody);
                 _logger.Info("Random password sent to user {Email}.", request.Email);
             }
-            catch(HandleException)
+            catch (HandleException)
             {
                 throw;
             }
@@ -776,6 +778,121 @@ namespace AuthService.Services
             catch (Exception ex)
             {
                 throw new Exception("Error unlockout for user.", ex);
+            }
+        }
+
+        public AuthenticationProperties ConfigureExternalAuthenticationProperties(string v, string redirectUrl)
+        {
+            return _signInManager.ConfigureExternalAuthenticationProperties(v, redirectUrl);
+        }
+
+        public async Task<LoginResponseDto> HandleExternalLoginAsync(string redirectUrl, string clientIp)
+        {
+            try
+            {
+                var result = await _signInManager.GetExternalLoginInfoAsync();
+                if (result == null)
+                {
+                    _logger.Warn("External login info not found during Google callback.");
+                    throw new HandleException("External login info not found.", StatusCodes.Status400BadRequest);
+                }
+
+                var signInResult = await _signInManager.ExternalLoginSignInAsync(result.LoginProvider, result.ProviderKey, isPersistent: false);
+                ApplicationUser? user;
+
+                if (signInResult.Succeeded)
+                {
+                    user = await _userManager.FindByLoginAsync(result.LoginProvider, result.ProviderKey);
+                    _logger.Info("User {UserId} ({Email}) signed in successfully via Google.", null, null, user.Id, user.Email!);
+                }
+                else if (signInResult.IsLockedOut || signInResult.IsNotAllowed)
+                {
+                    _logger.Warn("User sign-in failed due to lockout or not allowed: {LoginProvider} - {ProviderKey}", null, null, result.LoginProvider, result.ProviderKey);
+                    throw new HandleException("User sign-in failed due to lockout or not allowed.", StatusCodes.Status403Forbidden);
+                }
+
+                var email = result.Principal.FindFirstValue(ClaimTypes.Email);
+                if (string.IsNullOrEmpty(email))
+                {
+                    _logger.Error("Google login: No email claim found in principal.");
+                    throw new HandleException("Email claim not found from Google.", StatusCodes.Status400BadRequest);
+                }
+
+                // Check if user with this email already exists locally but not linked
+                var existingUserWithEmail = await _userManager.FindByEmailAsync(email);
+                if (existingUserWithEmail != null)
+                {
+                    _logger.Warn("AccountService: User with email {Email} already exists locally, but not linked to Google. Conflict.", email);
+                    throw new HandleException("An account with this email already exists. Please login with your existing account or link it to Google.", StatusCodes.Status409Conflict);
+                }
+
+                user = new ApplicationUser
+                {
+                    UserName = result.Principal.FindFirstValue(ClaimTypes.Email),
+                    Email = result.Principal.FindFirstValue(ClaimTypes.Email),
+                    EmailConfirmed = true,
+                    PhoneNumberConfirmed = false
+                };
+                var createResult = await _userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                    _logger.Error("Failed to create user during Google callback: {Errors}", null, null, errors);
+                    throw new HandleException($"Failed to create user: {errors}", StatusCodes.Status400BadRequest);
+                }
+                var loginResult = await _userManager.AddLoginAsync(user, result);
+                if (!loginResult.Succeeded)
+                {
+                    var errors = string.Join(", ", loginResult.Errors.Select(e => e.Description));
+                    _logger.Error("Failed to add external login during Google callback: {Errors}", null, null, errors);
+                    throw new HandleException($"Failed to add external login: {errors}", StatusCodes.Status400BadRequest);
+                }
+                _logger.Info("New user created and logged in via Google: {UserId} ({Email})", null, null, user.Id, user.Email!);
+
+                // Assign default role to new user
+                await _userManager.AddToRoleAsync(user, "User");
+                _logger.Debug("Assigned 'User' role to new user {UserId} ({Email}) during Google callback.", null, null, user.Id, user.Email!);
+
+                // Call to UserService to create user profile
+                await _userRegisteredProducer.Produce(new UserRegisteredEvent
+                {
+                    Id = user.Id,
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    Roles = [.. await _userManager.GetRolesAsync(user)]
+                });
+
+                // Send welcome email
+                var emailSubject = "Welcome to Our Service!";
+                var emailBody = $"<p>Hello {user.UserName},</p>" +
+                                "<p>Thank you for signing up using Google. Your account has been created successfully.</p>" +
+                                "<p>Feel free to explore our services!</p>" +
+                                "<p>Best regards,<br/>The Team</p>";
+                await _sendMailService.SendEmailAsync(user.Email, emailSubject, emailBody, isHtml: true);
+
+                _logger.Debug("Welcome email sent to new user {UserId} ({Email}) after Google sign-in.", null, null, user.Id, user.Email!);
+
+                // Redirect to the specified URL after successful sign-in
+                _logger.Debug("Redirecting to {RedirectUrl} after Google sign-in.", null, null, redirectUrl);
+                _logger.Info("User {UserId} ({Email}) signed in via Google and redirected to {RedirectUrl}.", null, null, user.Id, user.Email!, redirectUrl);
+
+                return new LoginResponseDto
+                {
+                    UserId = user.Id,
+                    AccessToken = await _jwtTokenGenerator.GenerateTokenAsync(user),
+                    RefreshToken = (await _refreshTokenService.GenerateRefreshTokenAsync(user, clientIp)).Token,
+                    ExpiresIn = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]!))
+                };
+
+            }
+            catch (HandleException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unexpected error during Google callback: {Message}", ex, null, null, ex.Message);
+                throw new HandleException("An unexpected error occurred during Google callback.", 500);
             }
         }
     }

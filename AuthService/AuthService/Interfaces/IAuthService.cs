@@ -1,6 +1,7 @@
 ﻿using AuthService.DTOs;
 using AuthService.Entities;
 using ManagementSystem.Shared.Contracts;
+using Microsoft.AspNetCore.Authentication;
 
 namespace AuthService.Interfaces
 {
@@ -21,6 +22,8 @@ namespace AuthService.Interfaces
         Task UpdateUserInfoAsync(UpdateAuthEvent request);
         Task<ApplicationUser> CreateUserByAdminAsync(CreateUserByAdminRequest request);
         Task<bool> UnLockOutAsync(UnLockOutRequest request);
+        AuthenticationProperties ConfigureExternalAuthenticationProperties(string v, string redirectUrl);
+        Task<LoginResponseDto> HandleExternalLoginAsync(string redirectUrl, string clientIp);
     }
 }
 

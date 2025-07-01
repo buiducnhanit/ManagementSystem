@@ -330,5 +330,35 @@ namespace AuthService.Controllers
                 return BadRequest(ApiResponse<string>.FailureResponse("Unexpected error occurred while unlock out user.", StatusCodes.Status400BadRequest, ex.Errors));
             }
         }
+
+        [HttpGet("google-login")]
+        [AllowAnonymous]
+        public IActionResult GoogleLogin()
+        {
+            var redirectUrl = Url.Action(nameof(GoogleLoginCallback), "Auth", null, Request.Scheme, Request.Host.ToUriComponent());
+            _logger.Info("Host request {Host}", propertyValues: Request.Host.ToUriComponent());
+            _logger.Info("Google login initiated at UTC: {utcNow}. Redirect URL: {redirectUrl}.", propertyValues: [DateTime.UtcNow, redirectUrl]);
+            var properties = _authService.ConfigureExternalAuthenticationProperties("Google", redirectUrl);
+            return Challenge(properties, "Google");
+        }
+
+        [HttpGet("google-login-callback")]
+        public async Task<IActionResult> GoogleLoginCallback()
+        {
+            try
+            {
+                var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+                var redirectUrl = Url.Action(nameof(GoogleLoginCallback), "Auth", null, Request.Scheme, Request.Host.ToUriComponent());
+                _logger.Info("Google login callback initiated from IP: {clientIp} at UTC: {utcNow}.", propertyValues: [clientIp, DateTime.UtcNow]);
+                var loginResponse = await _authService.HandleExternalLoginAsync(redirectUrl, clientIp!);
+
+                return Ok(ApiResponse<LoginResponseDto>.SuccessResponse(loginResponse, "Google login successful."));
+            }
+            catch (HandleException ex)
+            {
+                _logger.Error("Unexpected error in GoogleLoginCallback", ex);
+                return BadRequest(ApiResponse<string>.FailureResponse("Failed to login with Google.", 400, ex.Errors));
+            }
+        }
     }
 }

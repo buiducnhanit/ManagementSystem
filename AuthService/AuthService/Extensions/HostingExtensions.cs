@@ -47,6 +47,7 @@ namespace AuthService.Extensions
 
             // Add MassTransit for Kafka
             builder.Services.AddMassTransitService(configuration);
+            builder.Services.AddGoogleProvider(configuration);
 
             builder.Services.AddAuthorization();
             builder.Services.AddControllers();
