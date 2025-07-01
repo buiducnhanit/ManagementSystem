@@ -52,12 +52,11 @@ namespace AuthService.Extensions
             builder.Services.AddSignalR();
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowFrontend", policy =>
+                options.AddPolicy("AllowAll", policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173")
-                          .AllowAnyHeader()
+                    policy.AllowAnyOrigin()
                           .AllowAnyMethod()
-                          .AllowCredentials();
+                          .AllowAnyHeader();
                 });
             });
 
@@ -96,14 +95,14 @@ namespace AuthService.Extensions
             }
 
             //app.UseHttpsRedirection();
-            app.UseCors("AllowFrontend");
+            app.UseCors("AllowAll");
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
 
             app.UseSharedPolicies();
-            app.MapHub<NotificationHub>("/hub/notifications");
+            app.MapHub<NotificationHub>("/hub/notifications").RequireCors("AllowAll");
 
             return app;
         }

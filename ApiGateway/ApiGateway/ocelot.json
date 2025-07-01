@@ -9,7 +9,7 @@
           "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/v1/auth/register",
+      "UpstreamPathTemplate": "/auth/register",
       "UpstreamHttpMethod": [ "POST" ]
     },
     {
@@ -21,8 +21,34 @@
           "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/v1/auth/login",
+      "UpstreamPathTemplate": "/auth/login",
       "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/hub/notifications/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "authservice",
+          "Port": 80
+        }
+      ],
+      "UpstreamPathTemplate": "/hub/notifications/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "OPTIONS" ],
+      "WebSockets": true
+    },
+    {
+      "DownstreamPathTemplate": "/hub/notifications",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "authservice",
+          "Port": 80
+        }
+      ],
+      "UpstreamPathTemplate": "/hub/notifications",
+      "UpstreamHttpMethod": [ "GET", "POST" ],
+      "WebSockets": true
     },
     {
       "DownstreamPathTemplate": "/api/v1/auth/{everything}",
@@ -33,7 +59,7 @@
           "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/v1/auth/{everything}",
+      "UpstreamPathTemplate": "/auth/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "Priority": 0
     },
@@ -46,7 +72,7 @@
           "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/v1/roles",
+      "UpstreamPathTemplate": "/roles",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "Priority": 0
     },
@@ -59,7 +85,7 @@
           "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/v1/roles/{everything}",
+      "UpstreamPathTemplate": "/roles/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "Priority": 0
     },
@@ -72,7 +98,7 @@
           "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/v1/users/{id}",
+      "UpstreamPathTemplate": "/users/{id}",
       "UpstreamHttpMethod": [ "GET", "PUT", "DELETE" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
@@ -88,7 +114,7 @@
           "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/v1/users",
+      "UpstreamPathTemplate": "/users",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
@@ -96,7 +122,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/v1/users/{everything}",
+      "DownstreamPathTemplate": "/api/users/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -104,7 +130,7 @@
           "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/v1/users/{everything}",
+      "UpstreamPathTemplate": "/users/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
