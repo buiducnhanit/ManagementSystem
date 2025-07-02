@@ -14,10 +14,10 @@ namespace AuthService.Extensions
                 x.AddConsumer<UpdateAuthConsumer>();
 
                 x.UsingInMemory();
-               
+
                 x.AddRider(rider =>
                 {
-                    rider.AddProducer<UserRegisteredEvent>("user-registered-topic");
+                    rider.AddProducer<string, UserRegisteredEvent>("user-registered-topic");
                     rider.AddProducer<UnLockUserEvent>("user-unclock-topic");
                     rider.AddProducer<UpdateUserProfileEvent>("user-update-topic");
 

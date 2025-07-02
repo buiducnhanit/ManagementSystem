@@ -11,8 +11,6 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using System.Data;
-using System.Net;
-using System.Net.Http.Headers;
 using System.Web;
 
 namespace AuthService.Services
@@ -26,16 +24,15 @@ namespace AuthService.Services
         private readonly IConfiguration _configuration;
         private readonly ISendMailService _sendMailService;
         private readonly IRefreshTokenService _refreshTokenService;
-        private readonly IHttpClientFactory _httpClientFactory;
         private readonly PasswordOptions _passwordOptions;
-        private readonly ITopicProducer<UserRegisteredEvent> _userRegisteredProducer;
+        private readonly ITopicProducer<string, UserRegisteredEvent> _userRegisteredProducer;
         private readonly ITopicProducer<UnLockUserEvent> _unLockUserProducer;
         private readonly IDistributedCache _distributedCache;
         private readonly IHubContext<NotificationHub> _hubContext;
 
         public AuthServices(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtTokenGenerator jwtTokenGenerator, ICustomLogger<AuthServices> logger,
-            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IHttpClientFactory httpClientFactory, IOptions<IdentityOptions> passwordOptions,
-            ITopicProducer<UserRegisteredEvent> userRegisteredProducer, ITopicProducer<UnLockUserEvent> unLockUserProducer, IDistributedCache distributedCache, IHubContext<NotificationHub> hubContext)
+            IConfiguration configuration, ISendMailService sendMailService, IRefreshTokenService refreshTokenService, IOptions<IdentityOptions> passwordOptions,
+            ITopicProducer<string, UserRegisteredEvent> userRegisteredProducer, ITopicProducer<UnLockUserEvent> unLockUserProducer, IDistributedCache distributedCache, IHubContext<NotificationHub> hubContext)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -44,7 +41,6 @@ namespace AuthService.Services
             _configuration = configuration;
             _sendMailService = sendMailService;
             _refreshTokenService = refreshTokenService;
-            _httpClientFactory = httpClientFactory;
             _passwordOptions = passwordOptions.Value.Password;
             _userRegisteredProducer = userRegisteredProducer;
             _unLockUserProducer = unLockUserProducer;
@@ -75,12 +71,11 @@ namespace AuthService.Services
                 await _userManager.AddToRoleAsync(user, "User");
                 _logger.Info("User {Email} created in AuthService DB.", null, null, user.Email);
 
-                // Call User Service to create user profile using HTTP request
-                //await CallUserServiceToCreateProfile(user, dto);
                 var roles = await GetUserRolesAsync(user.Id.ToString());
                 _logger.Debug("User's roles: {roles}", propertyValues: roles);
+
                 // Publish event to create user profile in User Service using MassTransit
-                await _userRegisteredProducer.Produce(new UserRegisteredEvent
+                await _userRegisteredProducer.Produce(user.Id.ToString(), new UserRegisteredEvent
                 {
                     Id = user.Id,
                     UserName = user.UserName ?? string.Empty,
@@ -101,7 +96,6 @@ namespace AuthService.Services
                            $"<p>Click <a href='{confirmationLink}'>here</a> to confirm your email address.</p>";
                 await _sendMailService.SendEmailAsync(user.Email!, subject, body, isHtml: true);
                 _logger.Debug("Confirm account for user ID: {ID} with token: {token}", null, null, user.Id, emailToken);
-                //_logger.Info("User {Email} registered successfully and confirmation email sent.", user.Email);
 
                 return null;
             }
@@ -123,53 +117,6 @@ namespace AuthService.Services
                 }
                 _logger.Error("Unexpected error in RegisterAsync for {Email}", ex, null, null, dto.Email);
                 throw new HandleException("An unexpected error occurred during registration.", 500);
-            }
-        }
-
-        public async Task CallUserServiceToCreateProfile(ApplicationUser user, RegisterDto dto)
-        {
-            var client = _httpClientFactory.CreateClient();
-            client.BaseAddress = new Uri(_configuration["UserService:BaseUrl"]!);
-            _logger.Debug("URL for User Service: {Url}", null, null, client.BaseAddress);
-
-            var internalToken = _jwtTokenGenerator.GenerateInternalServiceToken();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
-
-            var createUserRequest = new UserRegisteredEvent
-            {
-                Id = user.Id,
-                UserName = user.UserName ?? string.Empty,
-                Email = user.Email!,
-                FirstName = dto.FirstName ?? string.Empty,
-                LastName = dto.LastName ?? string.Empty,
-                PhoneNumber = dto.PhoneNumber ?? string.Empty,
-                DateOfBirth = dto.DateOfBirth,
-                Address = dto.Address ?? string.Empty,
-            };
-
-            try
-            {
-                var url = $"{client.BaseAddress}api/v1/users";
-                _logger.Debug("Calling User Service to create profile for user {UserId} ({Email}) at {Url}", null, null, user.Id, user.Email!, url);
-                var response = await client.PostAsJsonAsync("api/v1/users", createUserRequest);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.Error("Failed to create user profile in user service.");
-                    throw new HttpRequestException($"UserService responded with status {response.StatusCode}: {errorContent}");
-                }
-                _logger.Debug("User profile created successfully for user {UserId} ({Email}) in UserService.", null, null, user.Id, user.Email!);
-            }
-            catch (HttpRequestException)
-            {
-                _logger.Error("Network or HTTP error calling User Service");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Error calling user service to create profile for user {UserId} ({Email}).", ex, null, null, user.Id, user.Email!);
-                throw;
             }
         }
 
@@ -559,7 +506,7 @@ namespace AuthService.Services
 
             if (!string.IsNullOrEmpty(updateAuth.Email) && user?.Email != updateAuth.Email)
             {
-                _logger.Debug("Attempting to update Email for user {UserId} from {OldEmail} to {NewEmail}.", null, null, user.Id, user.Email!, updateAuth.Email);
+                _logger.Debug("Attempting to update Email for user {UserId} from {OldEmail} to {NewEmail}.", null, null, user!.Id, user.Email!, updateAuth.Email);
                 var setUsernameResult = await _userManager.SetUserNameAsync(user, updateAuth.Email);
                 if (!setUsernameResult.Succeeded)
                 {
@@ -584,7 +531,7 @@ namespace AuthService.Services
                 await _sendMailService.SendEmailAsync(updateAuth.Email, subject, body, isHtml: true);
             }
 
-            if (!string.IsNullOrEmpty(updateAuth.PhoneNumber) && user.PhoneNumber != updateAuth.PhoneNumber)
+            if (!string.IsNullOrEmpty(updateAuth.PhoneNumber) && user!.PhoneNumber != updateAuth.PhoneNumber)
             {
                 _logger.Info("Attempting to update Phone Number for user {UserId} from {OldPhone} to {NewPhone}.", null, null, user.Id, user.PhoneNumber!, updateAuth.PhoneNumber);
                 var setPhoneNumberResult = await _userManager.SetPhoneNumberAsync(user, updateAuth.PhoneNumber);
@@ -599,19 +546,19 @@ namespace AuthService.Services
 
             if (userChanged)
             {
-                await _userManager.UpdateSecurityStampAsync(user);
-                var updateResult = await _userManager.UpdateAsync(user);
+                await _userManager.UpdateSecurityStampAsync(user!);
+                var updateResult = await _userManager.UpdateAsync(user!);
                 if (!updateResult.Succeeded)
                 {
                     var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
                     _logger.Error("Failed to save user changes and SecurityStamp for user.");
                     throw new HandleException($"Failed to save user changes: {errors}", 400, new List<string> { "Failed to update user information." });
                 }
-                _logger.Info("User {UserId} SecurityStamp updated and changes saved.", null, null, user.Id);
+                _logger.Info("User {UserId} SecurityStamp updated and changes saved.", null, null, user!.Id);
             }
             else
             {
-                _logger.Info("No relevant email or phone number changes for user {UserId}.", null, null, user.Id);
+                _logger.Info("No relevant email or phone number changes for user {UserId}.", null, null, user!.Id);
             }
         }
 
@@ -624,7 +571,6 @@ namespace AuthService.Services
             {
                 UserName = request.Email,
                 Email = request.Email,
-                //EmailConfirmed = true,
                 PhoneNumber = request.PhoneNumber,
                 PhoneNumberConfirmed = !string.IsNullOrEmpty(request.PhoneNumber)
             };
@@ -646,9 +592,8 @@ namespace AuthService.Services
             }
             _logger.Debug("New user identity {Email} created in AuthService and assigned 'User' role. User ID: {UserId}.", null, null, newUser.Email, newUser.Id.ToString());
 
-            //await CallToUserServiceToCreateAccount(newUser, request);
             var roles = await GetUserRolesAsync(newUser.Id.ToString());
-            await _userRegisteredProducer.Produce(new UserRegisteredEvent
+            await _userRegisteredProducer.Produce(newUser.Id.ToString(), new UserRegisteredEvent
             {
                 Id = newUser.Id,
                 UserName = newUser.Email,
@@ -691,13 +636,13 @@ namespace AuthService.Services
 
         private string GenerateRandomPassword(PasswordOptions opts)
         {
-            string[] randomChars = new[]
-            {
+            string[] randomChars =
+            [
                 "ABCDEFGHJKLMNOPQRSTUVWXYZ",
                 "abcdefghijkmnopqrstuvwxyz",
                 "0123456789",
                 "!@$?_-"
-            };
+            ];
 
             var rand = new Random();
             var chars = new List<char>();
@@ -720,61 +665,7 @@ namespace AuthService.Services
                 chars.Insert(rand.Next(0, chars.Count), rcs[rand.Next(0, rcs.Length)]);
             }
 
-            return new string(chars.ToArray());
-        }
-
-        public async Task CallToUserServiceToCreateAccount(ApplicationUser newUser, CreateUserByAdminRequest request)
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient();
-                var userServiceBaseUrl = _configuration["UserService:BaseUrl"] ?? throw new InvalidOperationException("UserService:BaseUrl is not configured.");
-                httpClient.BaseAddress = new Uri(userServiceBaseUrl);
-                _logger.Debug("User service url: {url}", propertyValues: userServiceBaseUrl);
-                //var internalToken = _jwtInternalService.GenerateInternalServiceToken();
-                //httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
-                var roles = await GetUserRolesAsync(newUser.Id.ToString());
-                _logger.Debug("User's roles: {Roles}", propertyValues: roles);
-                var profileRequest = new CreateUserProfileRequest
-                {
-                    Id = newUser.Id,
-                    UserName = newUser.Email,
-                    FirstName = request.FirstName,
-                    LastName = request.LastName,
-                    Email = newUser.Email,
-                    Address = request.Address,
-                    PhoneNumber = newUser.PhoneNumber,
-                    DateOfBirth = request.DateOfBirth,
-                    Gender = request.Gender,
-                    AvatarUrl = request.AvatarUrl,
-                    Roles = roles,
-                };
-
-                var response = await httpClient.PostAsJsonAsync("api/v1/users", profileRequest);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.Error("Failed to create user profile in UserService for UserId: {UserId}. Rolling back user identity.", null, null, null, newUser.Id);
-                    await _userManager.DeleteAsync(newUser);
-                    throw new HandleException($"Failed to create user profile in UserService: {errorContent}. User identity rolled back.", (int)response.StatusCode);
-                }
-
-                _logger.Debug("User profile created successfully in UserService for UserId: {UserId}.", null, null, newUser.Id);
-
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.Error("HTTP request failed when trying to create user profile in UserService for UserId: {UserId}. Rolling back user identity.", ex, null, null, newUser.Id);
-                await _userManager.DeleteAsync(newUser);
-                throw new HandleException($"Network or communication error with UserService: {ex.Message}. User identity rolled back.", (int)HttpStatusCode.InternalServerError);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("An unexpected error occurred while calling UserService for UserId: {UserId}. Rolling back user identity.", ex, null, null, newUser.Id);
-                await _userManager.DeleteAsync(newUser);
-                throw new HandleException($"An unexpected error occurred during user profile creation. User identity rolled back.", (int)HttpStatusCode.InternalServerError);
-            }
+            return new string([.. chars]);
         }
 
         public async Task<bool> UnLockOutAsync(UnLockOutRequest request)

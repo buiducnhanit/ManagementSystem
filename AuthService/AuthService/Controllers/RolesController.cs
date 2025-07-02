@@ -96,7 +96,7 @@ namespace AuthService.Controllers
 
                 return BadRequest(ApiResponse<string>.FailureResponse("Failed to create role."));
             }
-            catch (HandleException ex)
+            catch (HandleException)
             {
                 return StatusCode(500, new { message = "Internal server error." });
             }
@@ -120,7 +120,7 @@ namespace AuthService.Controllers
 
                 return BadRequest(ApiResponse<string>.FailureResponse("Failed to get roles."));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { message = "Internal server error." });
             }
@@ -143,7 +143,7 @@ namespace AuthService.Controllers
                 }
                 return BadRequest(ApiResponse<string>.FailureResponse("Failed to update role.", StatusCodes.Status400BadRequest));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { message = "Internal server error." });
             }

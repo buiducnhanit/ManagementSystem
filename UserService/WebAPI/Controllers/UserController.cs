@@ -76,7 +76,6 @@ namespace WebAPI.Controllers
             try
             {
                 var userProfile = await _userService.GetUserByIdAsync(id);
-                //var userProfile = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (userProfile == null)
                 {
                     _logger.Warn("User with ID: {ID} not found for update.", null, null, id);

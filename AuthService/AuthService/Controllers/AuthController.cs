@@ -34,7 +34,7 @@ namespace AuthService.Controllers
                 await _authService.RegisterAsync(dto);
 
                 _logger.Info("User {Email} registered successfully. Confirmation email sent.", null, null, dto.Email);
-                return Ok(ApiResponse<string>.SuccessResponse(null, "Registration successful. Please check your email to confirm your account."));
+                return Ok(ApiResponse<string?>.SuccessResponse(null, "Registration successful. Please check your email to confirm your account."));
             }
             catch (HandleException ex)
             {
@@ -149,7 +149,7 @@ namespace AuthService.Controllers
                 await _authService.ForgotPasswordAsyns(dto);
                 _logger.Info("Generate reset password token successfully for User: {Email}", null, null, dto.Email);
 
-                return Ok(ApiResponse<string>.SuccessResponse(null, "Generate reset password token successfully. Confirm your email to set new password."));
+                return Ok(ApiResponse<string?>.SuccessResponse(null, "Generate reset password token successfully. Confirm your email to set new password."));
             }
             catch (HandleException ex)
             {
@@ -168,7 +168,7 @@ namespace AuthService.Controllers
                 var result = await _authService.ResetPasswordAsyns(dto);
                 _logger.Info("Reset password successfully for User: {Email}", null, null, user.Email!);
 
-                return Ok(ApiResponse<string>.SuccessResponse(null, "Reset password successfully."));
+                return Ok(ApiResponse<string?>.SuccessResponse(null, "Reset password successfully."));
             }
             catch (HandleException ex)
             {
@@ -222,7 +222,7 @@ namespace AuthService.Controllers
                     return BadRequest(ApiResponse<string>.FailureResponse("Resend email confirmation failed.", 400));
                 }
                 _logger.Info("Email confirmation resent successfully for email {email}.", null, null, request.Email);
-                return Ok(ApiResponse<string>.SuccessResponse(null, "Email confirmation resent successfully."));
+                return Ok(ApiResponse<string?>.SuccessResponse(null, "Email confirmation resent successfully."));
             }
             catch (HandleException ex)
             {
@@ -279,7 +279,7 @@ namespace AuthService.Controllers
 
                 await _authService.UpdateUserInfoAsync(command);
                 _logger.Info("User info updated successfully for user ID: {UserId}", null, null, command.Id);
-                return Ok(ApiResponse<string>.SuccessResponse(null, "User info updated successfully."));
+                return Ok(ApiResponse<string?>.SuccessResponse(null, "User info updated successfully."));
             }
             catch (HandleException ex)
             {
@@ -320,7 +320,7 @@ namespace AuthService.Controllers
                 var response = await _authService.UnLockOutAsync(request);
                 if (response)
                 {
-                    return Ok(ApiResponse<string>.SuccessResponse(null, "Unlock out for user successfully.", StatusCodes.Status200OK));
+                    return Ok(ApiResponse<string?>.SuccessResponse(null, "Unlock out for user successfully.", StatusCodes.Status200OK));
                 }
 
                 return BadRequest(ApiResponse<string>.FailureResponse("Failed to unlock out user.", StatusCodes.Status400BadRequest));

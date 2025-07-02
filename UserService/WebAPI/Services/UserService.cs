@@ -14,19 +14,15 @@ namespace WebAPI.Services
         private readonly IUserRepository _userRepository;
         private readonly ICustomLogger<UserService> _logger;
         private readonly IMapper _mapper;
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
         private readonly ITopicProducer<UserDeletedEvent> _topicProducer;
         private readonly ITopicProducer<UpdateAuthEvent> _updateAuthTopicProducer;
 
-        public UserService(IUserRepository userRepository, ICustomLogger<UserService> logger, IMapper mapper, IHttpClientFactory httpClientFactory,
-            IConfiguration configuration, ITopicProducer<UserDeletedEvent> topicProducer, ITopicProducer<UpdateAuthEvent> updateAuthTopicProducer)
+        public UserService(IUserRepository userRepository, ICustomLogger<UserService> logger, IMapper mapper,
+            ITopicProducer<UserDeletedEvent> topicProducer, ITopicProducer<UpdateAuthEvent> updateAuthTopicProducer)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _topicProducer = topicProducer ?? throw new ArgumentNullException(nameof(topicProducer));
             _updateAuthTopicProducer = updateAuthTopicProducer;
         }
@@ -40,16 +36,11 @@ namespace WebAPI.Services
                 if (createdUserProfile == null)
                 {
                     _logger.Error("Failed to create user profile.");
-                    throw new Exception("Failed to create user profile.");
+                    return null!;
                 }
 
                 _logger.Info("User profile created successfully.", null, null, createdUserProfile);
                 return _mapper.Map<User, UserProfile>(createdUserProfile);
-            }
-            catch (HandleException hex)
-            {
-                _logger.Error("HandleException occurred while creating user.", hex);
-                throw;
             }
             catch (Exception ex)
             {
@@ -58,25 +49,22 @@ namespace WebAPI.Services
             }
         }
 
-        public async Task<UserProfile> GetUserByIdAsync(Guid id)
+        public async Task<UserProfile?> GetUserByIdAsync(Guid id)
         {
             try
             {
                 var user = await _userRepository.GetUserByIdAsync(id);
-                _logger.Info("User: {ID} retrieved successfully.", null, null, user.Id);
-
-                var userProfile = _mapper.Map<User, UserProfile>(user);
-
-                return userProfile;
-            }
-            catch (HandleException hex)
-            {
-                _logger.Error("HandleException occurred while retrieving user.", hex);
-                throw;
+                if (user != null)
+                {
+                    _logger.Info("User: {ID} retrieved successfully.", propertyValues: user.Id);
+                    var userProfile = _mapper.Map<User, UserProfile>(user);
+                    return userProfile;
+                }
+                return null;
             }
             catch (Exception ex)
             {
-                _logger.Error("Error retrieving user with ID: {ID}", ex, null, null, id);
+                _logger.Error("Error retrieving user with ID: {ID}", ex, propertyValues: id);
                 throw;
             }
         }
@@ -91,7 +79,7 @@ namespace WebAPI.Services
 
                 var profileUserUpdated = _mapper.Map<UpdateUserRequest, User>(request, existingUser);
                 _logger.Debug("Information user update {user}", propertyValues: profileUserUpdated);
-                //profileUserUpdated.Id = id;
+
                 var updatedUser = await _userRepository.UpdateUserAsync(profileUserUpdated);
                 _logger.Info("User profile updated successfully.", null, null, updatedUser);
 
@@ -99,7 +87,7 @@ namespace WebAPI.Services
                 bool isPhoneNumberChanged = oldPhoneNumber != request.PhoneNumber && !string.IsNullOrEmpty(request.PhoneNumber);
                 if (isEmailChanged || isPhoneNumberChanged)
                 {
-                    await SynchronizeAuthServiceUserInfoAsync(new UpdateAuthEvent
+                    await _updateAuthTopicProducer.Produce(new UpdateAuthEvent
                     {
                         Id = id,
                         Email = request.Email,
@@ -109,58 +97,11 @@ namespace WebAPI.Services
 
                 return _mapper.Map<User, UserProfile>(updatedUser);
             }
-            catch (HandleException hex)
-            {
-                _logger.Error("HandleException occurred while updating user.", hex);
-                throw;
-            }
             catch (Exception ex)
             {
                 _logger.Error("Error updating user.", ex);
                 throw;
             }
-        }
-
-        private async Task SynchronizeAuthServiceUserInfoAsync(UpdateAuthEvent request)
-        {
-            //_logger.Info("Attempting to synchronize user ID: {UserId} info with AuthService.", null, null, request.Id);
-
-            //var client = _httpClientFactory.CreateClient();
-            //client.BaseAddress = new Uri(_configuration["AuthService:BaseUrl"]!);
-            //_logger.Info("AuthService Base URL: {BaseUrl}", null, null, client.BaseAddress);
-
-            //var internalToken = _jwtInternalService.GenerateInternalServiceToken();
-            //client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", internalToken);
-
-            var updateAuthCommand = new UpdateAuthEvent
-            {
-                Id = request.Id,
-                Email = request.Email,
-                PhoneNumber = request.PhoneNumber,
-            };
-            await _updateAuthTopicProducer.Produce(updateAuthCommand);
-            //try
-            //{
-            //    var response = await client.PutAsJsonAsync("api/v1/auth/user-info", updateAuthCommand);
-
-            //    if (!response.IsSuccessStatusCode)
-            //    {
-            //        var errorContent = await response.Content.ReadAsStringAsync();
-            //        _logger.Error("Failed to update user info in AuthService.");
-            //        throw new HttpRequestException($"AuthService synchronization failed: {response.StatusCode} - {errorContent}");
-            //    }
-            //    _logger.Info("User info synchronized successfully with AuthService for user ID: {UserId}", null, null, request.Id);
-            //}
-            //catch (HttpRequestException ex)
-            //{
-            //    _logger.Error("Network or HTTP error calling AuthService.");
-            //    throw new Exception("Error during AuthService synchronization. Please contact support.", ex);
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logger.Error("An unexpected error occurred during AuthService.");
-            //    throw new Exception("An unexpected error occurred during AuthService synchronization.", ex);
-            //}
         }
 
         public async Task<bool> DeleteUserAsync(Guid id)
@@ -228,7 +169,7 @@ namespace WebAPI.Services
                 _logger.Error("HandleException occurred while unlocking user with ID: {ID}", propertyValues: id);
                 throw;
             }
-            catch (Exception ex) { throw new Exception("Error occurring unlock user."); }
+            catch (Exception ex) { throw new Exception("Error occurring unlock user.", ex); }
         }
     }
 }

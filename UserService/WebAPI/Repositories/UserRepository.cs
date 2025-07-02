@@ -1,9 +1,8 @@
-﻿using WebAPI.Entities;
-using WebAPI.Interfaces;
-using WebAPI.Data;
-using ManagementSystem.Shared.Common.Interfaces;
+﻿using ManagementSystem.Shared.Common.Interfaces;
 using ManagementSystem.Shared.Common.Logging;
-using ManagementSystem.Shared.Common.Exceptions;
+using WebAPI.Data;
+using WebAPI.Entities;
+using WebAPI.Interfaces;
 
 namespace WebAPI.Repositories
 {
@@ -25,10 +24,9 @@ namespace WebAPI.Repositories
                 if (user == null)
                 {
                     _logger.Error("CreateUser request is null.");
-                    throw new ArgumentNullException(nameof(user), "User data cannot be null.");
+                    return null!;
                 }
                 await _generic.AddAsync(user);
-
                 return user;
             }
             catch (Exception ex)
@@ -46,13 +44,13 @@ namespace WebAPI.Repositories
                 if (user == null)
                 {
                     _logger.Warn("User with ID: {id} not found.", propertyValues: id);
-                    throw new KeyNotFoundException($"User with ID: {id} not found.");
+                    return null!;
                 }
 
                 _logger.Info("User with ID: {ID} retrieved successfully.", propertyValues: id);
                 return user!;
             }
-            catch (HandleException ex)
+            catch (Exception ex)
             {
                 _logger.Error("Error retrieving user with ID: {ID}", ex, propertyValues: id);
                 throw;

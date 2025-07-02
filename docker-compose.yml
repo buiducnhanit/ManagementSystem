@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # 1. SQL Server Database Container
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserver
@@ -16,7 +15,6 @@ services:
     networks:
       - microservice_network
 
-  # 2. Auth Service Container
   authservice:
     build:
       context: . 
@@ -48,10 +46,12 @@ services:
     restart: "on-failure"
     depends_on:
       - sqlserver
+      - kafka
+      - kafka-init
+      - redis
     networks:
       - microservice_network
 
-  # 3. User Service Container
   userservice:
     build:
       context: .
@@ -74,10 +74,12 @@ services:
     restart: "on-failure"
     depends_on:
       - sqlserver
+      - kafka
+      - kafka-init
+      - redis
     networks:
       - microservice_network
       
-  # 4. API Gateway Container
   apigateway:
     build:
       context: .
@@ -129,6 +131,22 @@ services:
     networks:
       - microservice_network
       
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+        "
+        kafka-topics --create --topic user-registered-topic --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server kafka:9092 &&
+        kafka-topics --create --topic user-unclock-topic --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server kafka:9092 &&
+        kafka-topics --create --topic user-update-topic --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server kafka:9092 &&
+        kafka-topics --create --topic user-deleted-topic --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server kafka:9092 &&
+        kafka-topics --create --topic user-update-auth-topic --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server kafka:9092
+        "
+    networks:
+      - microservice_network
+
   kafka-ui:
     image: provectuslabs/kafka-ui
     container_name: kafka-ui

@@ -17,7 +17,7 @@ namespace AuthService.Data
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
                 var dbContext = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<SeedData>>();
-                var createProfileProducer = scope.ServiceProvider.GetRequiredService<ITopicProducer<UserRegisteredEvent>>();
+                var createProfileProducer = scope.ServiceProvider.GetRequiredService<ITopicProducer<string, UserRegisteredEvent>>();
 
                 logger.LogInformation("Starting database seeding...");
 
@@ -68,7 +68,7 @@ namespace AuthService.Data
             }
         }
 
-        private static async Task SeedAdminUser(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ILogger<SeedData> logger, ITopicProducer<UserRegisteredEvent> createProfileProducer)
+        private static async Task SeedAdminUser(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ILogger<SeedData> logger, ITopicProducer<string, UserRegisteredEvent> createProfileProducer)
         {
             string adminEmail = "admin@fpt.com";
             string adminPassword = "Admin@123";
@@ -121,8 +121,8 @@ namespace AuthService.Data
 
             try
             {
-                var roles = await userManager.GetRolesAsync(adminUser);
-                await createProfileProducer.Produce(new UserRegisteredEvent
+                var roles = await userManager.GetRolesAsync(adminUser!);
+                await createProfileProducer.Produce(adminUser!.Id.ToString(), new UserRegisteredEvent
                 {
                     Id = adminUser.Id,
                     UserName = adminUser.Email,
@@ -143,7 +143,7 @@ namespace AuthService.Data
             }
         }
 
-        private static async Task SeedManagerUser(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ILogger<SeedData> logger, ITopicProducer<UserRegisteredEvent> createProfileProducer)
+        private static async Task SeedManagerUser(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ILogger<SeedData> logger, ITopicProducer<string, UserRegisteredEvent> createProfileProducer)
         {
             string managerEmail = "manager@fpt.com";
             string managerPassword = "Manager@123";
@@ -196,8 +196,8 @@ namespace AuthService.Data
 
             try
             {
-                var roles = await userManager.GetRolesAsync(managerUser);
-                await createProfileProducer.Produce(new UserRegisteredEvent
+                var roles = await userManager.GetRolesAsync(managerUser!);
+                await createProfileProducer.Produce(managerUser!.Id.ToString(), new UserRegisteredEvent
                 {
                     Id = managerUser.Id,
                     UserName = managerUser.Email,
