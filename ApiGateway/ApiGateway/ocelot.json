@@ -119,7 +119,8 @@
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
-      }
+      },
+      "Priority":  1
     },
     {
       "DownstreamPathTemplate": "/api/users/{everything}",
@@ -135,7 +136,8 @@
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
-      }
+      },
+      "Priority": 0
     }
   ],
   "GlobalConfiguration": {
