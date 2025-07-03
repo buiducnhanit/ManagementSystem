@@ -74,7 +74,7 @@ export const resetPasswordAsync = async (userId: string, token: string, password
 export const confirmEmailAsync = async (userId: string, token: string) => {
     try {
         const response = await api.post(`/auth/confirm-email`, { userId, token });
-        return response.data;
+        return response;
     } catch (error: any) {
         throw error.response.data;
     }
@@ -82,10 +82,10 @@ export const confirmEmailAsync = async (userId: string, token: string) => {
 
 export const resendConfirmEmailAsync = async (email: string) => {
     try {
-        const { data } = await api.post(`/auth/resend-confirm-email`, { email });
-        return data;
+        const response = await api.post(`/auth/resend-confirm-email`, { email });
+        return response;
     } catch (error: any) {
-        throw new Error(error.response?.data?.message);
+        throw error.response.data;
     }
 }
 

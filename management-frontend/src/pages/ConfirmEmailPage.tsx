@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from "../utils/constants";
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { confirmEmailAsync, resendConfirmEmailAsync } from '../services/authService';
 
 const ConfirmEmailPage: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -8,57 +9,46 @@ const ConfirmEmailPage: React.FC = () => {
     const [status, setStatus] = useState<'pending' | 'success' | 'error'>('pending');
     const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
     const [errorMsg, setErrorMsg] = useState<string>('');
+    const location = useLocation();
+    const email = (location.state as { email?: string } | null)?.email || '';
 
     useEffect(() => {
-        const token = searchParams.get('token');
-        const userId = searchParams.get('userId');
-        if (!token || !userId) {
-            setStatus('error');
-            setErrorMsg('Liên kết xác nhận không hợp lệ hoặc đã hết hạn.');
-            return;
-        }
-
-        fetch(`${API_BASE_URL}/auth/confirm-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: encodeURIComponent(userId),
-                token: token
-            })
-        })
-            .then(res => {
-                if (res.ok) {
+        const confirmEmail = async () => {
+            const token = searchParams.get('token');
+            const userId = searchParams.get('userId');
+            if (!token || !userId) {
+                setStatus('error');
+                setErrorMsg('Liên kết xác nhận không hợp lệ hoặc đã hết hạn.');
+                return;
+            }
+            try {
+                const response = await confirmEmailAsync(userId, token);
+                if(response.data.statusCode === 200){
                     setStatus('success');
                     setTimeout(() => {
                         navigate('/login');
-                    }, 2500);
+                    }, 2000);
                 } else {
                     setStatus('error');
                     setErrorMsg('Liên kết xác nhận không hợp lệ hoặc đã hết hạn.');
                 }
-            })
-            .catch(() => {
+            } catch (error: any) {
                 setStatus('error');
                 setErrorMsg('Đã xảy ra lỗi khi xác nhận email.');
-            });
+                console.log(error);
+            }
+        };
+        confirmEmail();
     }, [searchParams, navigate]);
 
     const handleResend = async () => {
         setResendStatus('sending');
         setErrorMsg('');
-        const userId = searchParams.get('userId');
-        if (!userId) {
-            setResendStatus('error');
-            setErrorMsg('Không tìm thấy thông tin người dùng.');
-            return;
-        }
+        
         try {
-            const res = await fetch(`${API_BASE_URL}/auth/resend-confirm-email`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: encodeURIComponent(userId) })
-            });
-            if (res.ok) {
+            const res = await resendConfirmEmailAsync(email);
+            console.log(res)
+            if (res.data.statusCode === 200) {
                 setResendStatus('sent');
             } else {
                 setResendStatus('error');

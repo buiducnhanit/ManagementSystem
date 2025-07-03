@@ -4,9 +4,9 @@ import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../redux/slices/authSlice';
-import { refreshTokenAsync } from '../services/authService';
+import { logoutAsync, refreshTokenAsync } from '../services/authService';
 import { ACCESS_TOKEN_REFRESH_THRESHOLD_SECONDS, IDLE_TIMEOUT_MINUTES } from '../utils/constants';
-import { hubConnection, startHubConnection } from '../services/signalRService';
+import { hubConnection } from '../services/signalRService';
 
 const useAutoLogout = () => {
     const dispatch = useDispatch();
@@ -21,7 +21,7 @@ const useAutoLogout = () => {
     const resetIdleTimer = () => {
         clearTimeout(idleActivityTimerRef.current);
         idleActivityTimerRef.current = setTimeout(() => {
-            // console.log('User idle for too long. Logging out...');
+            logoutAsync();
             dispatch(logout());
             navigate("/login");
         }, IDLE_TIMEOUT_MINUTES * 60 * 1000);
@@ -109,7 +109,6 @@ const useAutoLogout = () => {
     }, [dispatch, navigate, location.pathname]);
 
     useEffect(() => {
-        startHubConnection();
         if (!hubConnection) {
             return;
         }

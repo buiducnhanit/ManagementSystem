@@ -45,7 +45,6 @@ const LoginPage: React.FC = () => {
         try {
             const response = await loginAsync(formData);
             if (response.data.statusCode === 200) {
-                // console.log(response.data)
                 dispatch(loginSuccess({
                     token: response.data.data.accessToken,
                     refreshToken: response.data.data.refreshToken,
@@ -55,11 +54,14 @@ const LoginPage: React.FC = () => {
                 }));
                 navigate('/users')
             }
-        } catch (error: any) {
-            // alert(error.message + '\nLỗi: ' + error.errors)
-            // alert("Tài khoản hoặc mật khẩu không đúng.");
-            alert(error.errors)
-            console.log(error)
+        }
+        catch (error: any) {
+            if (Array.isArray(error.errors) && error.errors.includes("Email is not confirmed.")) {
+                navigate("/confirm-email", { state: { email: formData.email } });
+                return;
+            }
+            alert(Array.isArray(error.errors) ? error.errors.join('\n') : error.errors);
+            console.log(error);
         }
     }
 

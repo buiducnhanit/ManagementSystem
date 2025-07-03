@@ -1,10 +1,15 @@
+import { useEffect } from "react";
 import useAutoLogout from "./hook/useAutoLogout"
-// import useIdleSessionTimeout from "./hook/useIdleSessionTimeout";
 import AppRouter from "./router"
+import { startHubConnection } from "./services/signalRService";
 
 function App() {
   useAutoLogout();
-  // useIdleSessionTimeout();
+
+  useEffect(() => {
+    startHubConnection();
+  }, [])
+
   return (
     <>
       <AppRouter />
