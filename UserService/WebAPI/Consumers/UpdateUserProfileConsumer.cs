@@ -27,8 +27,10 @@ namespace WebAPI.Consumers
             try
             {
                 var updateUserProfileEvent = context.Message;
-                var userProfileDto = _mapper.Map<UpdateUserProfileEvent, UpdateUserRequest>(updateUserProfileEvent);
-                await _userService.UpdateUserAsync(Guid.Parse(context.Message.Id), userProfileDto);
+                var userExists = await _userService.GetUserByIdAsync(Guid.Parse(updateUserProfileEvent.Id));
+                userExists.Roles = updateUserProfileEvent.Roles;
+                var updateUserRequest = _mapper.Map<UpdateUserRequest>(userExists);
+                await _userService.UpdateUserAsync(Guid.Parse(context.Message.Id), updateUserRequest);
             }
             catch (HandleException hex)
             {

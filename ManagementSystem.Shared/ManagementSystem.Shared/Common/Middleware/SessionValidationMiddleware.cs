@@ -32,7 +32,7 @@ namespace ManagementSystem.Shared.Common.Middleware
                 if (stampInCache == null || stampInCache != jwtStamp)
                 {
                     context.Response.StatusCode = 401;
-                    await context.Response.WriteAsync("Invalid session");
+                    await context.Response.WriteAsync("{\"error\":\"InvalidSession\"}");
                     return;
                 }
             }

@@ -120,7 +120,7 @@
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
       },
-      "Priority":  1
+      "Priority": 1
     },
     {
       "DownstreamPathTemplate": "/api/users/{everything}",
