@@ -48,6 +48,7 @@ const UserListPage: React.FC = () => {
             try {
                 await deleteUserAsync(id);
                 // setUsers(prev => prev.filter(user => user.id !== id));
+                window.location.reload(); // Reload the page to reflect changes
             } catch (error: any) {
                 alert('Xóa người dùng thất bại!');
                 console.log(error)

@@ -1,4 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
+import { changePasswordAsync } from '../services/authService';
+import { useNavigate } from 'react-router-dom';
 
 const ChangePassword: React.FC = () => {
     const [oldPassword, setOldPassword] = useState('');
@@ -6,6 +9,7 @@ const ChangePassword: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -17,8 +21,22 @@ const ChangePassword: React.FC = () => {
             return;
         }
 
-        // TODO: Gọi API đổi mật khẩu ở đây
-        setMessage('Đổi mật khẩu thành công!');
+        try {
+            const response = await changePasswordAsync(
+                oldPassword,
+                newPassword,
+                confirmPassword
+            )
+
+            if (response.data.statusCode === 200) {
+                alert('Đổi mật khẩu thành công!');
+                // setMessage('Đổi mật khẩu thành công!');
+                navigate('/login');
+            }
+        } catch (err: any) {
+            setError(err.message || 'Đổi mật khẩu thất bại. Vui lòng thử lại.');
+            // return;
+        }
     };
 
     return (

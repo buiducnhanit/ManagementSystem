@@ -3,7 +3,6 @@ import axios from "axios";
 import { API_BASE_URL } from "../utils/constants";
 import type { registerForm } from "../types/registerForm";
 import type { loginForm } from "../types/loginForm";
-import type { changePassword } from "../types/changePassword";
 import api from "./axiosInstance";
 
 export const registerAsync = async (registerRequest: registerForm) => {
@@ -89,13 +88,13 @@ export const resendConfirmEmailAsync = async (email: string) => {
     }
 }
 
-export const changePasswordAsync = async (changePasswordRequest: changePassword) => {
+export const changePasswordAsync = async (oldPassword: string, newPassword: string, confirmPassword: string) => {
     try {
-        const { data } = await api.post(`/auth/change-password`, changePasswordRequest);
-        return data;
+        const response = await api.post(`/auth/change-password`, { oldPassword, newPassword, confirmPassword });
+        return response;
     }
     catch (error: any) {
-        throw new Error(error.response?.data?.message);
+        throw error.response.data;
     }
 }
 
