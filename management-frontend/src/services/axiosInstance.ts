@@ -52,7 +52,7 @@ api.interceptors.response.use(
                     window.location.href = '/login';
                     return Promise.reject(refreshError);
                 }
-            } else if (errorCode === "InvalidToken") {
+            } else if (errorCode === "InvalidToken" || errorCode === "InvalidSession") {
                 store.dispatch(logout());
                 window.location.href = '/login';
                 return Promise.reject(new Error("Invalid or tampered token"));
