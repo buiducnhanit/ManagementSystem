@@ -5,10 +5,13 @@ import { startHubConnection } from "./services/signalRService";
 
 function App() {
   useAutoLogout();
-
+  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  // console.log(token)
   useEffect(() => {
-    startHubConnection();
-  }, [])
+    if (token) {
+      startHubConnection();
+    }
+  }, [token])
 
   return (
     <>

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { logout } from '../redux/slices/authSlice';
+import { loginSuccess, logout } from '../redux/slices/authSlice';
 import { logoutAsync, refreshTokenAsync } from '../services/authService';
 import { ACCESS_TOKEN_REFRESH_THRESHOLD_SECONDS, IDLE_TIMEOUT_MINUTES } from '../utils/constants';
 import { hubConnection } from '../services/signalRService';
@@ -54,11 +54,20 @@ const useAutoLogout = () => {
                                 localStorage.setItem("token", newAccessToken);
                                 localStorage.setItem("refreshToken", newRefreshToken);
                                 localStorage.setItem("expiresIn", newExpiresIn);
+                                localStorage.setItem("userId", userId!);
                             } else {
                                 sessionStorage.setItem("token", newAccessToken);
                                 sessionStorage.setItem("refreshToken", newRefreshToken);
                                 sessionStorage.setItem("expiresIn", newExpiresIn);
+                                sessionStorage.setItem("userId", userId!);
                             }
+                            dispatch(loginSuccess({
+                                token: newAccessToken,
+                                refreshToken: newRefreshToken,
+                                expiresIn: newExpiresIn,
+                                rememberMe: !!localStorage.getItem('refreshToken'),
+                                userId: userId!
+                            }));
                             // console.log('Access Token refreshed successfully!');
                             startAccessTokenRefreshTimer(newExpiresIn);
                             return;

@@ -10,11 +10,11 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-    isAuthenticated: !!localStorage.getItem('token'),
-    token: localStorage.getItem("token") ? localStorage.getItem("token") : null,
-    refreshToken: localStorage.getItem("refreshToken") ? localStorage.getItem("refreshToken") : null,
-    expiresIn: localStorage.getItem("expiresIn") || null,
-    userId: localStorage.getItem("userId") ? localStorage.getItem("userId") : null
+    isAuthenticated: !!localStorage.getItem('token') || !!sessionStorage.getItem('token'),
+    token: localStorage.getItem("token") || sessionStorage.getItem("token"),
+    refreshToken: localStorage.getItem("refreshToken") || sessionStorage.getItem("refreshToken"),
+    expiresIn: localStorage.getItem("expiresIn") || sessionStorage.getItem("expiresIn"),
+    userId: localStorage.getItem("userId") || sessionStorage.getItem("userId")
 }
 
 const authSlice = createSlice({
