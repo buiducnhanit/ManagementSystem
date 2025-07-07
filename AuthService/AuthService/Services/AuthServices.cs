@@ -307,6 +307,15 @@ namespace AuthService.Services
                 var accessTokenExpires = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]!));
                 _logger.Info("User {UserId} refreshed token successfully.", null, null, dto.UserId);
 
+                var securityStamp = await _userManager.GetSecurityStampAsync(user);
+                await _distributedCache.SetStringAsync(
+                    $"session:{user.Id}",
+                    securityStamp,
+                    new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]!))
+                    });
+
                 return new RefreshTokenResponseDto
                 {
                     AccessToken = newAccessToken,
@@ -332,6 +341,8 @@ namespace AuthService.Services
                 string reason = "User logged out";
                 await _refreshTokenService.RevokeAllTokensForUserAsync(userId, reason, clientIp);
                 _logger.Debug("All tokens revoked for user {userId} due to logout. Reason: {reason}", null, null, userId, reason);
+
+                await _distributedCache.RemoveAsync($"session:{userId}");
             }
             catch (Exception ex)
             {
